@@ -1,4 +1,4 @@
-"""YAML config loading with dataset defaults merging."""
+"""YAML config loading with _base inheritance."""
 
 import copy
 import os
@@ -78,6 +78,13 @@ def resolve_paths(config: Config, project_root: Path) -> Config:
     if vid_file and not Path(vid_file).is_absolute():
         config.download.video_ids_file = str(project_root / vid_file)
 
+    # Resolve extractor model paths relative to project root
+    for attr in ("pose_model_config", "pose_model_checkpoint",
+                 "det_model_config", "det_model_checkpoint"):
+        val = getattr(config.extractor, attr)
+        if val and not Path(val).is_absolute():
+            setattr(config.extractor, attr, str(project_root / val))
+
     return config
 
 
@@ -85,12 +92,12 @@ def load_config(
     yaml_path: str,
     overrides: Optional[List[str]] = None,
 ) -> Config:
-    """Load config from YAML file, merging with dataset defaults.
+    """Load config from YAML file with _base inheritance.
 
     Merge order (later overrides earlier):
     1. Pydantic defaults (hardcoded in schema)
-    2. Dataset defaults (from BaseDataset.default_config())
-    3. YAML config file
+    2. _base YAML (if specified via _base key)
+    3. Dataset-specific YAML config file
     4. CLI overrides (key=value pairs)
     """
     yaml_path = os.path.abspath(yaml_path)
@@ -101,9 +108,26 @@ def load_config(
     with open(yaml_path, "r") as f:
         raw = yaml.safe_load(f) or {}
 
+    # Handle _base inheritance
+    if "_base" in raw:
+        base_rel = raw.pop("_base")
+        configs_dir = Path(yaml_path).parent.parent  # e.g. configs/youtube_asl/ -> configs/
+        base_path = configs_dir / base_rel
+        with open(base_path) as f:
+            base_raw = yaml.safe_load(f) or {}
+        raw = deep_merge(base_raw, raw)
+
     dataset_name = raw.get("dataset")
     if not dataset_name:
         raise ValueError("Config must specify 'dataset' field")
+
+    # Validate pipeline.steps is present
+    pipeline_cfg = raw.get("pipeline", {})
+    if not pipeline_cfg.get("steps"):
+        raise ValueError(
+            "Config must specify 'pipeline.steps'. "
+            "Steps are no longer inferred from dataset classes."
+        )
 
     if dataset_name not in DATASET_REGISTRY:
         raise ValueError(
@@ -111,32 +135,21 @@ def load_config(
             f"Available: {list(DATASET_REGISTRY.keys())}"
         )
 
-    # Get dataset defaults
-    dataset_cls = DATASET_REGISTRY[dataset_name]
-    defaults = dataset_cls.default_config()
-
-    # Merge: defaults <- yaml
-    merged = deep_merge(defaults, raw)
-
     # Apply CLI overrides
     if overrides:
         for override in overrides:
             if "=" not in override:
                 raise ValueError(f"Override must be key=value, got: {override}")
             key, value = override.split("=", 1)
-            _set_nested(merged, key, _parse_value(value))
+            _set_nested(raw, key, _parse_value(value))
 
-    # Populate pipeline steps from dataset if not specified
-    pipeline_cfg = merged.get("pipeline", {})
-    mode = pipeline_cfg.get("mode", "pose")
-    if not pipeline_cfg.get("steps"):
-        steps = dataset_cls.pipeline_steps(mode)
-        if "pipeline" not in merged:
-            merged["pipeline"] = {}
-        merged["pipeline"]["steps"] = steps
-
-    config = Config(**merged)
+    config = Config(**raw)
     config = resolve_paths(config, project_root)
+
+    # Optionally run dataset-specific validation
+    dataset_cls = DATASET_REGISTRY[dataset_name]
+    dataset_cls.validate_config(config)
+
     return config
 
 

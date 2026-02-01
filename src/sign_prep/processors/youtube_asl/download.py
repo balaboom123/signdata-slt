@@ -8,9 +8,9 @@ from typing import Set, Tuple, Dict
 
 from tqdm import tqdm
 
-from .base import BaseProcessor
-from ..registry import register_processor
-from ..config.schema import Config
+from ..base import BaseProcessor
+from ...registry import register_processor
+from ...config.schema import Config
 
 logger = logging.getLogger(__name__)
 

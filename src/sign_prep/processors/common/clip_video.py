@@ -9,8 +9,8 @@ from typing import List, Tuple
 import pandas as pd
 from tqdm import tqdm
 
-from .base import BaseProcessor
-from ..registry import register_processor
+from ..base import BaseProcessor
+from ...registry import register_processor
 
 
 def _clip_single_video(args) -> Tuple[str, bool, str]:

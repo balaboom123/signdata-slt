@@ -1,0 +1,12 @@
+_base: _base/video.yaml
+
+dataset: how2sign
+
+pipeline:
+  mode: video
+  steps: [clip_video, webdataset]
+
+paths:
+  root: dataset/how2sign
+  videos: dataset/how2sign/videos
+  manifest: dataset/how2sign/how2sign_realigned_val.csv

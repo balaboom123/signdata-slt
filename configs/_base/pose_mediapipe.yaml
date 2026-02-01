@@ -1,0 +1,29 @@
+extractor:
+  name: mediapipe
+  max_workers: 4
+  model_complexity: 1
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  refine_face_landmarks: true
+  reduction: true
+
+normalize:
+  mode: xy_isotropic_z_minmax
+  remove_z: false
+  reduction: true
+  mask_frame_level: true
+  mask_landmark_level: false
+  visibility_threshold: 0.3
+  unvisible_value: -999.0
+
+processing:
+  max_workers: 4
+  target_fps: 24.0
+  frame_skip: 2
+  accept_fps_range: [24.0, 60.0]
+  skip_existing: true
+  min_duration: 0.2
+  max_duration: 60.0
+
+webdataset:
+  max_shard_count: 10000

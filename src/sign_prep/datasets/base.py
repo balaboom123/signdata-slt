@@ -1,7 +1,10 @@
 """Base dataset class."""
 
-from abc import ABC, abstractmethod
-from typing import List
+from abc import ABC
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..config.schema import Config
 
 
 class BaseDataset(ABC):
@@ -10,13 +13,6 @@ class BaseDataset(ABC):
     name: str
 
     @classmethod
-    @abstractmethod
-    def default_config(cls) -> dict:
-        """Return default config dict for this dataset."""
-        pass
-
-    @classmethod
-    @abstractmethod
-    def pipeline_steps(cls, mode: str) -> List[str]:
-        """Return ordered list of processor names for the given mode."""
+    def validate_config(cls, config: "Config") -> None:
+        """Validate config for this dataset. Override for custom checks."""
         pass

@@ -1,7 +1,6 @@
 _base_ = ['mmpose::_base_/default_runtime.py']
 
-custom_imports = dict(imports=['projects.rtmpose3d'], allow_failed_imports=False)
-# custom_imports = dict(imports=['rtmpose3d'], allow_failed_imports=False)
+custom_imports = dict(imports=['sign_prep.models.rtmpose3d'], allow_failed_imports=False)
 
 vis_backends = [
     dict(type='LocalVisBackend'),

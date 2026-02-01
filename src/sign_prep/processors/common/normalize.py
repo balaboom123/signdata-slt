@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 from tqdm import tqdm
 
-from .base import BaseProcessor
-from ..registry import register_processor
+from ..base import BaseProcessor
+from ...registry import register_processor
 
 
 def _load_clip(path: str) -> np.ndarray:

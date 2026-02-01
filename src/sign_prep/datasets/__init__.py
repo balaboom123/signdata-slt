@@ -1,4 +1,4 @@
-"""Dataset definitions with default configurations and pipeline steps."""
+"""Dataset definitions with config validation."""
 
 from .base import BaseDataset
 from .youtube_asl import YouTubeASLDataset

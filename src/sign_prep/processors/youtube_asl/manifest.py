@@ -10,9 +10,9 @@ from typing import Dict, List
 import pandas as pd
 from tqdm import tqdm
 
-from .base import BaseProcessor
-from ..registry import register_processor
-from ..utils.text import normalize_text
+from ..base import BaseProcessor
+from ...registry import register_processor
+from ...utils.text import normalize_text
 
 
 @register_processor("manifest")

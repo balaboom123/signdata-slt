@@ -1,0 +1,113 @@
+_base: _base/pose_mmpose.yaml
+
+dataset: youtube_asl
+
+pipeline:
+  mode: pose
+  steps: [download, manifest, extract, normalize, webdataset]
+
+paths:
+  root: dataset/youtube_asl
+  videos: dataset/youtube_asl/videos
+  transcripts: dataset/youtube_asl/transcripts
+  manifest: dataset/youtube_asl/manifest.csv
+
+download:
+  video_ids_file: assets/youtube-asl_youtube_asl_video_ids.txt
+  languages: [en, ase, en-US, en-CA, en-GB, en-AU]
+  format: "worstvideo[height>=720][fps>=24]/bestvideo[height>=480][height<720][fps>=24][fps<=60]/bestvideo[height>=480][height<=1080][fps>=14]"
+  rate_limit: "5M"
+  concurrent_fragments: 5
+
+manifest:
+  max_text_length: 300
+  min_duration: 0.2
+  max_duration: 60.0
+
+extractor:
+  keypoint_indices:
+    - 5
+    - 6
+    - 7
+    - 8
+    - 11
+    - 12
+    - 23
+    - 25
+    - 27
+    - 29
+    - 31
+    - 33
+    - 35
+    - 37
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+    - 47
+    - 48
+    - 49
+    - 52
+    - 54
+    - 56
+    - 58
+    - 71
+    - 73
+    - 75
+    - 77
+    - 79
+    - 81
+    - 83
+    - 84
+    - 85
+    - 86
+    - 87
+    - 88
+    - 89
+    - 90
+    - 91
+    - 92
+    - 93
+    - 94
+    - 95
+    - 96
+    - 97
+    - 98
+    - 99
+    - 100
+    - 101
+    - 102
+    - 103
+    - 104
+    - 105
+    - 106
+    - 107
+    - 108
+    - 109
+    - 110
+    - 111
+    - 112
+    - 113
+    - 114
+    - 115
+    - 116
+    - 117
+    - 118
+    - 119
+    - 120
+    - 121
+    - 122
+    - 123
+    - 124
+    - 125
+    - 126
+    - 127
+    - 128
+    - 129
+    - 130
+    - 131
+    - 132

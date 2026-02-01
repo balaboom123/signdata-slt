@@ -1,0 +1,17 @@
+extractor:
+  name: mediapipe
+
+clip_video:
+  codec: copy
+
+processing:
+  max_workers: 4
+  target_fps: 24.0
+  frame_skip: 2
+  accept_fps_range: [24.0, 60.0]
+  skip_existing: true
+  min_duration: 0.2
+  max_duration: 60.0
+
+webdataset:
+  max_shard_count: 10000

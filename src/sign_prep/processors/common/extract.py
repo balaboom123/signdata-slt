@@ -13,10 +13,10 @@ import numpy as np
 import pandas as pd
 import psutil
 
-from .base import BaseProcessor
-from ..registry import register_processor
-from ..utils.video import FPSSampler, validate_video_file, get_video_fps
-from ..utils.files import get_video_filenames
+from ..base import BaseProcessor
+from ...registry import register_processor
+from ...utils.video import FPSSampler, validate_video_file, get_video_fps
+from ...utils.files import get_video_filenames
 
 
 def _read_manifest_csv(csv_file: str) -> Tuple[pd.DataFrame, str, str]:
@@ -149,8 +149,8 @@ def _process_segment_mediapipe(args):
     import logging
     logger = logging.getLogger("sign_prep.extract")
 
-    from ..config.schema import ExtractorConfig
-    from ..extractors.mediapipe import MediaPipeExtractor
+    from ...config.schema import ExtractorConfig
+    from ...extractors.mediapipe import MediaPipeExtractor
 
     cap = None
     extractor = None
@@ -216,8 +216,8 @@ def _process_segment_mmpose(args):
 
     global _detector, _pose_estimator
 
-    from ..config.schema import ExtractorConfig
-    from ..extractors.mmpose import MMPoseExtractor, MultiPersonDetected
+    from ...config.schema import ExtractorConfig
+    from ...extractors.mmpose import MMPoseExtractor, MultiPersonDetected
 
     cap = None
     try:

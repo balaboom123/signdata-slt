@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 import webdataset as wds
 
-from .base import BaseProcessor
-from ..registry import register_processor
+from ..base import BaseProcessor
+from ...registry import register_processor
 
 
 def _read_manifest_csv(csv_file: str) -> Tuple[pd.DataFrame, str, str]:
