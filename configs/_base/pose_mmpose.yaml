@@ -1,7 +1,6 @@
 extractor:
   name: mmpose
   max_workers: 4
-  reduction: false
   bbox_threshold: 0.5
   kpt_threshold: 0.3
   add_visible: true

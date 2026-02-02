@@ -15,15 +15,13 @@ from ..config.schema import ExtractorConfig
 class MediaPipeExtractor(LandmarkExtractor):
     """Extracts holistic landmarks using MediaPipe.
 
-    Extracts landmarks for pose, face, and hands. Supports optional
-    keypoint reduction via index filtering.
+    Always outputs all landmarks: 33 pose + 478 face (refined) or
+    468 face (unrefined) + 21 left hand + 21 right hand.
     """
 
     def __init__(self, config: ExtractorConfig):
-        self.pose_idx = config.pose_idx
-        self.face_idx = config.face_idx
-        self.hand_idx = config.hand_idx
-        self.apply_reduction = config.reduction
+        self.refine_face = config.refine_face_landmarks
+        self.face_count = 478 if self.refine_face else 468
 
         self.holistic = mp.solutions.holistic.Holistic(
             model_complexity=config.model_complexity,
@@ -40,32 +38,18 @@ class MediaPipeExtractor(LandmarkExtractor):
         image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.holistic.process(image_rgb)
 
-        if self.apply_reduction:
-            pose_landmarks = self._convert_landmarks_to_array(
-                getattr(results.pose_landmarks, "landmark", None), self.pose_idx
-            )
-            face_landmarks = self._convert_landmarks_to_array(
-                getattr(results.face_landmarks, "landmark", None), self.face_idx
-            )
-            left_hand_landmarks = self._convert_landmarks_to_array(
-                getattr(results.left_hand_landmarks, "landmark", None), self.hand_idx
-            )
-            right_hand_landmarks = self._convert_landmarks_to_array(
-                getattr(results.right_hand_landmarks, "landmark", None), self.hand_idx
-            )
-        else:
-            pose_landmarks = self._convert_all_landmarks_to_array(
-                getattr(results.pose_landmarks, "landmark", None)
-            )
-            face_landmarks = self._convert_all_landmarks_to_array(
-                getattr(results.face_landmarks, "landmark", None)
-            )
-            left_hand_landmarks = self._convert_all_landmarks_to_array(
-                getattr(results.left_hand_landmarks, "landmark", None)
-            )
-            right_hand_landmarks = self._convert_all_landmarks_to_array(
-                getattr(results.right_hand_landmarks, "landmark", None)
-            )
+        pose_landmarks = self._convert_all_landmarks_to_array(
+            getattr(results.pose_landmarks, "landmark", None), 33
+        )
+        face_landmarks = self._convert_all_landmarks_to_array(
+            getattr(results.face_landmarks, "landmark", None), self.face_count
+        )
+        left_hand_landmarks = self._convert_all_landmarks_to_array(
+            getattr(results.left_hand_landmarks, "landmark", None), 21
+        )
+        right_hand_landmarks = self._convert_all_landmarks_to_array(
+            getattr(results.right_hand_landmarks, "landmark", None), 21
+        )
 
         landmark_array = np.concatenate([
             pose_landmarks,
@@ -76,25 +60,10 @@ class MediaPipeExtractor(LandmarkExtractor):
 
         return landmark_array.astype(np.float32)
 
-    def _convert_landmarks_to_array(
-        self,
-        landmarks: Optional[List],
-        indices: List[int],
-    ) -> np.ndarray:
-        """Convert MediaPipe landmarks at specified indices to numpy array."""
-        if landmarks:
-            out = []
-            for i in indices:
-                lm = landmarks[i]
-                vis = getattr(lm, "visibility", 1.0)
-                out.append([lm.x, lm.y, lm.z, vis])
-            return np.array(out, dtype=np.float32)
-        else:
-            return np.zeros((len(indices), 4), dtype=np.float32)
-
     def _convert_all_landmarks_to_array(
         self,
         landmarks: Optional[List],
+        expected_count: int,
     ) -> np.ndarray:
         """Convert all MediaPipe landmarks to numpy array."""
         if landmarks:
@@ -104,7 +73,7 @@ class MediaPipeExtractor(LandmarkExtractor):
                 out.append([lm.x, lm.y, lm.z, vis])
             return np.array(out, dtype=np.float32)
         else:
-            return np.zeros((0, 4), dtype=np.float32)
+            return np.zeros((expected_count, 4), dtype=np.float32)
 
     def close(self):
         if self.holistic is not None:

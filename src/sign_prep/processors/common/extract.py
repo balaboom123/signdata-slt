@@ -171,13 +171,7 @@ def _process_segment_mediapipe(args):
         ext_config = ExtractorConfig(**config_dict["extractor"])
         extractor = MediaPipeExtractor(ext_config)
 
-        if ext_config.reduction:
-            num_landmarks = (
-                len(ext_config.pose_idx) + len(ext_config.face_idx)
-                + 2 * len(ext_config.hand_idx)
-            )
-        else:
-            num_landmarks = 543
+        num_landmarks = 33 + (478 if ext_config.refine_face_landmarks else 468) + 21 + 21
 
         sequences = []
         current = start_frame
@@ -241,10 +235,7 @@ def _process_segment_mmpose(args):
             pose_estimator=_pose_estimator,
         )
 
-        num_landmarks = (
-            len(ext_config.keypoint_indices) if ext_config.reduction and ext_config.keypoint_indices
-            else 133
-        )
+        num_landmarks = 133
 
         sequences = []
         current = start_frame

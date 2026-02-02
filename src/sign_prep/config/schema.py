@@ -35,13 +35,6 @@ class ExtractorConfig(BaseModel):
     kpt_threshold: float = 0.3
     add_visible: bool = True
     device: str = "cuda:0"
-    # Reduction
-    reduction: bool = True
-    keypoint_indices: Optional[List[int]] = None
-    # MediaPipe index lists (used when reduction=True)
-    pose_idx: List[int] = []
-    face_idx: List[int] = []
-    hand_idx: List[int] = []
 
 
 class NormalizeConfig(BaseModel):

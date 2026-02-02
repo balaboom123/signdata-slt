@@ -11,7 +11,7 @@ paths:
   videos: dataset/how2sign/videos
   manifest: dataset/how2sign/how2sign_realigned_val.csv
 
-extractor:
+normalize:
   keypoint_indices:
     - 5
     - 6

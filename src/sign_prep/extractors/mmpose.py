@@ -21,6 +21,8 @@ class MMPoseExtractor(LandmarkExtractor):
     Uses a two-stage pipeline:
     1. RTMDet for person detection (bounding boxes)
     2. RTMPose3D for 3D pose estimation
+
+    Always outputs all 133 COCO WholeBody keypoints.
     """
 
     def __init__(
@@ -31,11 +33,6 @@ class MMPoseExtractor(LandmarkExtractor):
     ):
         self.detector = detector
         self.pose_estimator = pose_estimator
-        self.apply_reduction = config.reduction
-        if config.reduction and config.keypoint_indices is not None:
-            self.keypoint_indices = config.keypoint_indices
-        else:
-            self.keypoint_indices = list(range(133))
         self.bbox_threshold = config.bbox_threshold
         self.det_cat_id = 0
         self.add_visible = config.add_visible
@@ -43,7 +40,7 @@ class MMPoseExtractor(LandmarkExtractor):
     def process_frame(self, frame: np.ndarray) -> Optional[np.ndarray]:
         """Detect person and extract 3D landmarks from a single frame.
 
-        Returns array of shape (num_keypoints, 4) with [x, y, z, visibility].
+        Returns array of shape (133, 4) with [x, y, z, visibility].
         Raises MultiPersonDetected if multiple persons detected.
         """
         from mmpose.apis import inference_topdown
@@ -126,9 +123,6 @@ class MMPoseExtractor(LandmarkExtractor):
         xy = tk[instance_index]
         xyz = k3d[instance_index]
 
-        xy = xy[self.keypoint_indices]
-        xyz = xyz[self.keypoint_indices]
-
         x_norm = xy[..., 0] / float(img_w)
         y_norm = xy[..., 1] / float(img_h)
         z = xyz[..., 2]
@@ -141,10 +135,9 @@ class MMPoseExtractor(LandmarkExtractor):
             elif kpt_scores.ndim == 3:
                 visible = kpt_scores[instance_index, :, 0]
             else:
-                visible = np.ones(len(self.keypoint_indices), dtype=np.float32)
-            visible = visible[self.keypoint_indices]
+                visible = np.ones(133, dtype=np.float32)
         else:
-            visible = np.ones(len(self.keypoint_indices), dtype=np.float32)
+            visible = np.ones(133, dtype=np.float32)
 
         out = np.stack([x_norm, y_norm, z, visible], axis=-1).astype(np.float32)
         return out

@@ -20,7 +20,7 @@ def _load_clip(path: str) -> np.ndarray:
         T, F = arr.shape
         if F % 4 == 0:
             K = F // 4
-            if K in [85, 133, 543]:
+            if K in [85, 133, 543, 553]:
                 arr = arr.reshape(T, K, 4)
             else:
                 raise ValueError(f"Unsupported shape {arr.shape} in {path}")
@@ -52,7 +52,14 @@ def _apply_keypoint_reduction(
 
 
 def _get_default_keypoint_indices(num_keypoints: int) -> Optional[List[int]]:
-    """Get default reduction indices based on input keypoint count."""
+    """Get default reduction indices based on input keypoint count.
+
+    Maps full keypoint sets down to 85 selected keypoints:
+    - 553: MediaPipe refined (33 pose + 478 face + 21 left + 21 right)
+    - 543: MediaPipe unrefined (33 pose + 468 face + 21 left + 21 right)
+    - 133: MMPose COCO WholeBody
+    - 85: Already reduced
+    """
     if num_keypoints == 85:
         return None
     elif num_keypoints == 133:
@@ -63,8 +70,36 @@ def _get_default_keypoint_indices(num_keypoints: int) -> Optional[List[int]]:
             52, 54, 56, 58,
             71, 73, 75, 77, 79, 81, 83, 84, 85, 86, 87, 88, 89, 90,
         ] + list(range(91, 133))
+    elif num_keypoints == 553:
+        # Pose (offset=0): 6 upper-body landmarks
+        pose = [11, 12, 13, 14, 23, 24]
+        # Face (offset=33): 37 selected face landmarks (with iris refinement)
+        face = [
+            33, 37, 46, 47, 50, 66, 70, 72, 79, 85, 88, 94, 97,
+            114, 115, 126, 166, 184, 185, 192, 205, 211, 214,
+            296, 302, 309, 315, 318, 324, 327, 344, 356,
+            395, 419, 430, 501, 506,
+        ]
+        # Left hand (offset=511): all 21
+        left_hand = list(range(511, 532))
+        # Right hand (offset=532): all 21
+        right_hand = list(range(532, 553))
+        return pose + face + left_hand + right_hand
     elif num_keypoints == 543:
-        return list(range(85))
+        # Pose (offset=0): 6 upper-body landmarks
+        pose = [11, 12, 13, 14, 23, 24]
+        # Face (offset=33): 35 selected face landmarks (no iris)
+        face = [
+            33, 37, 46, 47, 50, 66, 70, 72, 79, 85, 88, 94, 97,
+            114, 115, 126, 166, 184, 185, 192, 205, 211, 214,
+            296, 302, 309, 315, 318, 324, 327, 344, 356,
+            395, 419, 430,
+        ]
+        # Left hand (offset=501): all 21
+        left_hand = list(range(501, 522))
+        # Right hand (offset=522): all 21
+        right_hand = list(range(522, 543))
+        return pose + face + left_hand + right_hand
     else:
         return None
 

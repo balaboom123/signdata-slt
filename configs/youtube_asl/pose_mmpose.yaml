@@ -24,7 +24,7 @@ manifest:
   min_duration: 0.2
   max_duration: 60.0
 
-extractor:
+normalize:
   keypoint_indices:
     - 5
     - 6
