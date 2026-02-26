@@ -4,6 +4,19 @@ extractor:
 clip_video:
   codec: copy
 
+person_localize:
+  model: "yolov8n.pt"
+  confidence_threshold: 0.5
+  sample_strategy: "skip_frame"   # "skip_frame" (default) or "uniform"
+  frame_skip: 2                   # skip_frame: take 1 frame every (frame_skip+1) frames
+  sample_frames: 5                # uniform: exact count; skip_frame: max frame count
+  device: "cuda:0"
+  min_bbox_area: 0.05
+
+crop_video:
+  padding: 0.25
+  codec: "libx264"
+
 processing:
   max_workers: 4
   target_fps: 24.0
