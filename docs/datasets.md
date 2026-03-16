@@ -16,7 +16,7 @@ Requires `download.video_ids_file` pointing to the video ID list (included at `a
 
 80+ hours of instructional "how-to" videos with continuous ASL, recorded in a controlled environment with professional signers ([Duarte et al., CVPR 2021](https://how2sign.github.io/)).
 
-**Pipeline:** `extract → normalize → webdataset` (no download or manifest steps)
+**Pipeline:** `extract → normalize → webdataset` for the standard pose configs
 
 ```bash
 python -m sign_prep configs/how2sign/pose_mediapipe.yaml
@@ -27,26 +27,18 @@ python -m sign_prep configs/how2sign/pose_mediapipe.yaml
 2. Place videos in the `videos` path (default: `dataset/how2sign/videos/`)
 3. Place the alignment CSV (e.g. `how2sign_realigned_val.csv`) at the `manifest` path
 
-The How2Sign dataset class rejects configs that include `download` or `manifest` steps.
+The How2Sign dataset class rejects `download` steps. Experiment configs may still
+include `manifest` when they reuse an existing alignment CSV and do not rely on
+the YouTube transcript-building flow.
 
 ## Adding a New Dataset
 
-1. Create a dataset class with `@register_dataset`:
+See [CONTRIBUTING.md](../CONTRIBUTING.md#adding-a-new-dataset) for step-by-step instructions and code examples.
 
-```python
-from sign_prep.datasets.base import BaseDataset
-from sign_prep.registry import register_dataset
+---
 
-@register_dataset("my_dataset")
-class MyDataset(BaseDataset):
-    name = "my_dataset"
+## See Also
 
-    @classmethod
-    def validate_config(cls, config):
-        # Raise ValueError for invalid configs
-        pass
-```
-
-2. Import the module in `datasets/__init__.py` so the decorator runs at startup.
-
-3. Create a YAML config under `configs/my_dataset/` that sets `dataset: my_dataset` and defines `pipeline.steps`.
+- [Pipeline Stages](pipeline-stages.md) -- what each stage does and its I/O
+- [Configuration Reference](configuration.md) -- full config schema and CLI overrides
+- [Research-Aligned Preprocessing](research-preprocessing.md) -- paper-aligned methodology notes

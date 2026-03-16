@@ -56,6 +56,32 @@ Clips video segments with ffmpeg and packages `.mp4` files into tar shards.
 
 The `steps` list in config controls exactly which processors run. `start_from` and `stop_at` allow resuming or stopping partway through.
 
+### Data Shape Flow
+
+| Stage | Format | Shape / Notes |
+|---|---|---|
+| `extract` output | `.npy` per segment | `(T, K, 4)` — T frames, K keypoints, 4 channels `[x, y, z, vis]` |
+| `normalize` output | `.npy` per segment | `(T, K'×C)` flattened — K' reduced keypoints, C = 3 (visibility is stripped); C = 2 when `remove_z=true` |
+| `clip_video` output | `.mp4` per segment | raw video clip, optionally resized |
+| `webdataset` output | `.tar` shards | each sample: `.npy`/`.mp4` + `.txt` + `.json` metadata |
+
+Default keypoint counts (K): MediaPipe refined = **553**, MediaPipe unrefined = **543**, MMPose RTMPose3D = **133**.
+Default after reduction (K'): **85** keypoints for MediaPipe refined and MMPose; **83** for MediaPipe unrefined. Dataset-specific configs may override via `normalize.keypoint_indices`.
+
+## PipelineContext Fields
+
+`PipelineContext` is a dataclass that carries all shared state between steps:
+
+| Field | Type | Set by | Description |
+|---|---|---|---|
+| `config` | `Config` | runner | Full parsed config object |
+| `dataset` | `BaseDataset` | runner | Dataset instance (e.g. `YouTubeASL`) |
+| `project_root` | `Path` | runner | Absolute path to repo root |
+| `manifest_path` | `Path?` | `manifest` processor | Path to the manifest CSV |
+| `manifest_df` | `DataFrame?` | `manifest` processor | Loaded manifest as a pandas DataFrame |
+| `completed_steps` | `list[str]` | each processor | Names of processors that have finished |
+| `stats` | `dict[str, dict]` | each processor | Per-step counters (processed, skipped, errors) |
+
 ## Processors
 
 Every processor subclasses `BaseProcessor` and implements:
@@ -67,35 +93,12 @@ Processors are stateless between runs. All shared state flows through `PipelineC
 
 ## Extensibility
 
-**New dataset:**
-```python
-@register_dataset("my_dataset")
-class MyDataset(BaseDataset):
-    name = "my_dataset"
+The pipeline is designed to be extended with new datasets, processors, and extractors via the registry decorator pattern. See [CONTRIBUTING.md](../CONTRIBUTING.md) for step-by-step instructions and code examples.
 
-    @classmethod
-    def validate_config(cls, config):
-        ...  # dataset-specific checks
-```
+---
 
-**New processor:**
-```python
-@register_processor("my_step")
-class MyProcessor(BaseProcessor):
-    name = "my_step"
+## See Also
 
-    def run(self, context):
-        ...  # processing logic
-        return context
-```
-
-**New extractor:**
-```python
-@register_extractor("my_extractor")
-class MyExtractor(LandmarkExtractor):
-    def process_frame(self, frame):
-        ...  # return (K, 4) array or None
-
-    def close(self):
-        ...  # release resources
-```
+- [Configuration Reference](configuration.md) -- full config schema and CLI overrides
+- [Pipeline Stages](pipeline-stages.md) -- detailed per-stage documentation
+- [Datasets](datasets.md) -- dataset-specific setup guides

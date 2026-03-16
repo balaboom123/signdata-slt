@@ -14,6 +14,44 @@ python -m sign_prep configs/youtube_asl/pose_mediapipe.yaml \
   --override processing.max_workers=8 normalize.remove_z=true
 ```
 
+### Merge example
+
+`_base/pose_mediapipe.yaml` sets:
+```yaml
+processing:
+  max_workers: 4
+  target_fps: 24.0
+```
+
+`configs/youtube_asl/pose_mediapipe.yaml` overrides only what differs:
+```yaml
+_base: _base/pose_mediapipe.yaml
+
+processing:
+  max_workers: 8   # overrides the base value; target_fps: 24.0 is inherited unchanged
+```
+
+## Minimal Working Config
+
+The smallest valid dataset config only needs to specify what differs from the base and Pydantic defaults:
+
+```yaml
+# configs/my_dataset/pose_mediapipe.yaml
+_base: _base/pose_mediapipe.yaml
+
+dataset: my_dataset
+
+pipeline:
+  steps: [extract, normalize, webdataset]
+
+paths:
+  root: dataset/my_dataset
+  videos: dataset/my_dataset/videos
+  manifest: dataset/my_dataset/manifest.csv
+```
+
+Everything else (extractor settings, normalization mode, worker counts, etc.) is inherited from the base YAML and Pydantic defaults.
+
 ## Config Files
 
 ```
@@ -154,3 +192,11 @@ All paths are resolved relative to the project root if not absolute. Defaults ar
 # Use a specific GPU
 --override extractor.device=cuda:1
 ```
+
+---
+
+## See Also
+
+- [Architecture](architecture.md) -- system design, registry, pipeline flow
+- [Pipeline Stages](pipeline-stages.md) -- what each stage does and its I/O
+- [Installation Guide](installation.md) -- base setup and MMPose dependencies

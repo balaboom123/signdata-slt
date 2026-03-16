@@ -1,112 +1,125 @@
-# Sign Language Preprocessing Pipeline
+<!-- Animated Header -->
+<img src="https://balaboom123-capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=Sign%20Language%20Preprocessing&fontSize=42&fontColor=fff&anmatioin=twinkling&fontAlignY=32&desc=Config-Driven%20ASL%20Dataset%20Preprocessing%20Pipeline&descAlignY=52&descSize=18"/>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-10B981?style=flat" alt="License"/></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue?style=flat" alt="Python 3.11+"/></a>
+  <a href="https://github.com/balaboom123/Sign-Language-Preprocessing/stargazers"><img src="https://img.shields.io/github/stars/balaboom123/Sign-Language-Preprocessing?style=flat&color=F59E0B" alt="Stars"/></a>
+  <a href="https://github.com/balaboom123/Sign-Language-Preprocessing/issues"><img src="https://img.shields.io/github/issues/balaboom123/Sign-Language-Preprocessing?style=flat&color=EF4444" alt="Issues"/></a>
+</p>
 
 A config-driven, modular pipeline for preprocessing **American Sign Language (ASL)** datasets.
 Supports **YouTube-ASL** and **How2Sign** with two landmark extractors (**MediaPipe Holistic** and **MMPose RTMPose3D**) and two output modes (pose landmarks and video clips).
 
-## Features
+<!-- Quick Links -->
+<div align="center">
+  <a href="#-quick-start"><img src="https://img.shields.io/badge/🚀_Quick_Start-4285F4?style=flat-square" alt="Quick Start"/></a>
+  <a href="docs/installation.md"><img src="https://img.shields.io/badge/📖_Installation-34A853?style=flat-square" alt="Installation"/></a>
+  <a href="docs/pipeline-stages.md"><img src="https://img.shields.io/badge/🛠️_Pipeline_Stages-EA4335?style=flat-square" alt="Pipeline Stages"/></a>
+  <a href="docs/architecture.md"><img src="https://img.shields.io/badge/🏗️_Architecture-FBBC05?style=flat-square" alt="Architecture"/></a>
+</div>
 
-- **Config-driven** -- YAML configs with base inheritance and CLI overrides
-- **Two extractors** -- MediaPipe Holistic (553 keypoints) and MMPose RTMPose3D (133 keypoints)
-- **Two pipeline modes** -- `pose` (landmarks) and `video` (clip extraction)
-- **Registry architecture** -- add datasets, processors, and extractors via decorators
-- **Parallel processing** -- multi-worker extraction, normalization, and clipping
-- **WebDataset output** -- sharded tar archives for efficient training data loading
+<br/>
 
-## Project Structure
+---
 
-```
-Sign-Language-Preprocessing/
-├── configs/
-│   ├── _base/                  # Shared base configs
-│   │   ├── pose_mediapipe.yaml
-│   │   ├── pose_mmpose.yaml
-│   │   └── video.yaml
-│   ├── youtube_asl/            # YouTube-ASL dataset configs
-│   └── how2sign/               # How2Sign dataset configs
-├── src/sign_prep/
-│   ├── __main__.py             # CLI entry point
-│   ├── cli.py                  # Argument parsing
-│   ├── registry.py             # Component registry
-│   ├── config/                 # YAML loading & Pydantic schema
-│   ├── pipeline/               # PipelineRunner & PipelineContext
-│   ├── datasets/               # Dataset definitions
-│   ├── processors/             # Pipeline step implementations
-│   ├── extractors/             # MediaPipe & MMPose extractors
-│   ├── models/                 # MMPose model configs & checkpoints
-│   └── utils/                  # Video, file, and text utilities
-├── docs/                       # Documentation
-├── assets/                     # Video ID lists, demo files
-├── tests/                      # Test suite
-└── requirements.txt
-```
+## ✨ Key Features
+
+<div align="center">
+<table>
+<tr>
+<td width="50%">
+
+### 📝 Config-Driven
+YAML configs with base inheritance and CLI overrides
+
+### 🦴 Two Extractors
+MediaPipe Holistic (553 keypoints) and MMPose RTMPose3D (133 keypoints)
+
+### 🎬 Two Pipeline Modes
+`pose` (landmarks) and `video` (clip extraction)
+
+</td>
+<td width="50%">
+
+### 🧩 Registry Architecture
+Add datasets, processors, and extractors via decorators
+
+### ⚡ Parallel Processing
+Multi-worker extraction, normalization, and clipping
+
+### 📦 WebDataset Output
+Sharded tar archives for efficient training data loading
+
+</td>
+</tr>
+</table>
+</div>
+
+> 📖 **New?** See the [Installation Guide](docs/installation.md) to get started.
+
+---
 
 ## Installation
 
 ```bash
-git clone https://github.com/gorden-chen/Sign-Language-Preprocessing.git
+git clone https://github.com/balaboom123/Sign-Language-Preprocessing.git
 cd Sign-Language-Preprocessing
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**MMPose (optional, GPU required):**
+### Optional: MMPose (GPU required)
 
-```bash
-pip install -U openmim
-mim install mmcv==2.0.1 mmengine==0.10.7 mmdet==3.1.0
-git clone https://github.com/open-mmlab/mmpose.git ../mmpose
-pip install -v -e ../mmpose
-export PYTHONPATH="/path/to/mmpose:$PYTHONPATH"
+MediaPipe works on CPU out of the box. MMPose requires a CUDA-capable GPU and additional dependencies -- see the [Installation Guide](docs/installation.md) for full setup instructions.
 
-# Download checkpoints into src/sign_prep/models/checkpoints/
-wget -P src/sign_prep/models/checkpoints/ \
-  https://download.openmmlab.com/mmpose/v1/wholebody_3d_keypoint/rtmw3d/rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_20240626.pth
-wget -P src/sign_prep/models/checkpoints/ \
-  https://download.openmmlab.com/mmpose/v1/projects/rtmpose/rtmdet_nano_8xb32-100e_coco-obj365-person-05d8511e.pth
-```
+---
 
 ## Quick Start
 
 ```bash
-# YouTube-ASL with MediaPipe (full pipeline)
+# Download YouTube-ASL videos, extract MediaPipe landmarks, normalize, and package into WebDataset shards
 python -m sign_prep configs/youtube_asl/pose_mediapipe.yaml
 
-# How2Sign with MMPose (requires pre-downloaded data)
+# Extract MMPose landmarks from pre-downloaded How2Sign data (CUDA required)
 python -m sign_prep configs/how2sign/pose_mmpose.yaml
 
-# Override config values from the command line
+# Override any config value from the command line (e.g. more workers, stop after extraction)
 python -m sign_prep configs/youtube_asl/pose_mediapipe.yaml \
   --override processing.max_workers=8 pipeline.stop_at=extract
 ```
 
+---
+
+## Output
+
+Both modes produce [WebDataset](https://github.com/webdataset/webdataset) tar shards for efficient training data loading. See [Pipeline Stages](docs/pipeline-stages.md) for detailed output formats and data shapes.
+
+---
+
+## Supported Datasets
+
+| Dataset | Venue | Description | License |
+|:--------|:------|:------------|:--------|
+| **[YouTube-ASL](docs/datasets.md#youtube-asl)** | NeurIPS 2023 | 11,000+ videos, 73,000+ segments -- open-domain ASL-English parallel corpus | [Apache-2.0](https://github.com/google-research/google-research/tree/master/youtube_asl) |
+| **[How2Sign](docs/datasets.md#how2sign)** | CVPR 2021 | 80+ hours of instructional ASL in a controlled studio environment | [CC BY-NC 4.0](https://how2sign.github.io/) |
+
+For paper-aligned preprocessing methodology, see [Research-Aligned Preprocessing](docs/research-preprocessing.md).
+
+---
+
 ## Documentation
 
+- [Installation Guide](docs/installation.md) -- base setup and MMPose GPU dependencies
 - [Architecture](docs/architecture.md) -- system design, registry, pipeline flow
 - [Configuration](docs/configuration.md) -- full config reference, inheritance, CLI overrides
 - [Pipeline Stages](docs/pipeline-stages.md) -- all 6 processing stages
 - [Datasets](docs/datasets.md) -- YouTube-ASL vs How2Sign setup
-
-## Citation
-
-```bibtex
-@misc{uthus2023youtubeasl,
-  author    = {Uthus, David and Tanzer, Garrett and Georg, Manfred},
-  title     = {YouTube-ASL: A Large-Scale, Open-Domain American Sign Language-English Parallel Corpus},
-  year      = {2023},
-  eprint    = {2306.15162},
-  archivePrefix = {arXiv},
-  url       = {https://arxiv.org/abs/2306.15162},
-}
-
-@inproceedings{duarte2021how2sign,
-  author    = {Duarte, Amanda and Palaskar, Shruti and Ventura, Lucas and Ghadiyaram, Deepti and DeHaan, Kenneth and Metze, Florian and Torres, Jordi and Giro-i-Nieto, Xavier},
-  title     = {How2Sign: A Large-scale Multimodal Dataset for Continuous American Sign Language},
-  booktitle = {CVPR},
-  year      = {2021},
-}
-```
+- [Research-Aligned Preprocessing](docs/research-preprocessing.md) -- paper-aligned preprocessing notes
 
 ## License
+
+The MIT license in this repository applies to the code and documentation in this project. Use of external datasets, research artifacts, and upstream repos referenced above must comply with their original licenses and usage terms.
 
 MIT -- see [LICENSE](LICENSE).
