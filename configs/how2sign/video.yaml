@@ -4,7 +4,7 @@ dataset: how2sign
 
 pipeline:
   mode: video
-  steps: [clip_video, webdataset]
+  steps: [person_localize, clip_video, crop_video, webdataset]
   start_from: null
   stop_at: null
 
@@ -15,7 +15,8 @@ paths:
   manifest: dataset/how2sign/how2sign_realigned_val.csv
   landmarks: ""
   normalized: ""
-  clips: ""
+  clips: dataset/how2sign/clips
+  cropped_clips: dataset/how2sign/cropped_clips
   webdataset: ""
 
 download:
@@ -29,3 +30,12 @@ manifest:
   max_text_length: 300
   min_duration: 0.2
   max_duration: 60.0
+
+# person_localize and crop_video use defaults from _base/video.yaml.
+# Only uncomment fields you actually want to change from the defaults, e.g.:
+# person_localize:
+#   device: "cuda:0"          # use GPU instead of CPU
+#   confidence_threshold: 0.4 # lower threshold if signer detections are missed
+
+# crop_video:
+#   padding: 0.15             # tighter crop if signer fills most of the frame

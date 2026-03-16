@@ -69,6 +69,23 @@ class ClipVideoConfig(BaseModel):
     resize: Optional[List[int]] = None
 
 
+class PersonLocalizeConfig(BaseModel):
+    model: str = "yolov8n.pt"
+    backend: Literal["ultralytics"] = "ultralytics"
+    confidence_threshold: float = 0.5
+    sample_strategy: Literal["skip_frame", "uniform"] = "skip_frame"
+    uniform_frames: int = 5     # uniform mode: exact number of frames to sample
+    max_frames: int = 5         # skip_frame mode: maximum frames to sample
+    # frame_skip is read from processing.frame_skip — not duplicated here
+    device: str = "cpu"
+    min_bbox_area: float = 0.05
+
+
+class CropVideoConfig(BaseModel):
+    padding: float = 0.25   # Padding ratio around the detected bbox
+    codec: str = "libx264"
+
+
 class PipelineConfig(BaseModel):
     mode: Literal["pose", "video"] = "pose"
     steps: List[str] = []
@@ -84,6 +101,7 @@ class PathsConfig(BaseModel):
     landmarks: str = ""
     normalized: str = ""
     clips: str = ""
+    cropped_clips: str = ""
     webdataset: str = ""
 
 
@@ -98,3 +116,5 @@ class Config(BaseModel):
     processing: ProcessingConfig = ProcessingConfig()
     webdataset: WebDatasetConfig = WebDatasetConfig()
     clip_video: ClipVideoConfig = ClipVideoConfig()
+    person_localize: PersonLocalizeConfig = PersonLocalizeConfig()
+    crop_video: CropVideoConfig = CropVideoConfig()

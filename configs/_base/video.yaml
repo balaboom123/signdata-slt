@@ -4,6 +4,21 @@ extractor:
 clip_video:
   codec: copy
 
+person_localize:
+  model: "yolov8n.pt"
+  backend: "ultralytics"
+  confidence_threshold: 0.5
+  sample_strategy: "skip_frame"   # "skip_frame" (default) or "uniform"
+  uniform_frames: 5               # uniform mode: exact frame count to sample
+  max_frames: 5                   # skip_frame mode: maximum frames to sample
+  # frame_skip is shared with processing.frame_skip — not duplicated here
+  device: "cpu"                   # override to "cuda:0" or "mps" for GPU
+  min_bbox_area: 0.05
+
+crop_video:
+  padding: 0.25
+  codec: "libx264"
+
 processing:
   max_workers: 4
   target_fps: 24.0

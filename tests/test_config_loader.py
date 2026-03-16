@@ -148,8 +148,9 @@ class TestResolvePaths:
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
 
-        assert cfg.paths.root == "/abs/root"
-        assert cfg.paths.videos == "/abs/videos"
+        # Use as_posix() to normalise separators across Linux and Windows
+        assert Path(cfg.paths.root).as_posix() == "/abs/root"
+        assert Path(cfg.paths.videos).as_posix() == "/abs/videos"
 
     def test_video_ids_file_relative_resolved(self):
         """download.video_ids_file is resolved relative to project root."""
@@ -168,7 +169,7 @@ class TestResolvePaths:
         )
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
-        assert cfg.download.video_ids_file == "/abs/ids.txt"
+        assert Path(cfg.download.video_ids_file).as_posix() == "/abs/ids.txt"
 
     def test_video_ids_file_empty_unchanged(self):
         cfg = Config(dataset="test")
@@ -221,7 +222,36 @@ class TestResolvePaths:
         )
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
-        assert cfg.extractor.pose_model_config == "/abs/model.py"
+        assert Path(cfg.extractor.pose_model_config).as_posix() == "/abs/model.py"
+
+    def test_cropped_clips_default_resolved(self):
+        """cropped_clips defaults to <root>/cropped_clips when not set."""
+        cfg = Config(dataset="test")
+        project_root = Path("/proj")
+        cfg = resolve_paths(cfg, project_root)
+
+        expected_root = project_root / "dataset" / "test"
+        assert cfg.paths.cropped_clips == str(expected_root / "cropped_clips")
+
+    def test_cropped_clips_relative_resolved(self):
+        """Relative cropped_clips path is resolved against project root."""
+        cfg = Config(
+            dataset="test",
+            paths={"cropped_clips": "data/cropped"},
+        )
+        project_root = Path("/proj")
+        cfg = resolve_paths(cfg, project_root)
+        assert cfg.paths.cropped_clips == str(project_root / "data" / "cropped")
+
+    def test_cropped_clips_absolute_unchanged(self):
+        """Absolute cropped_clips path is left as-is."""
+        cfg = Config(
+            dataset="test",
+            paths={"cropped_clips": "/abs/cropped"},
+        )
+        project_root = Path("/proj")
+        cfg = resolve_paths(cfg, project_root)
+        assert Path(cfg.paths.cropped_clips).as_posix() == "/abs/cropped"
 
 
 # ── load_config ─────────────────────────────────────────────────────────────

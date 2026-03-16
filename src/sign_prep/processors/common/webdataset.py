@@ -3,12 +3,13 @@
 import io
 import json
 import os
+import tarfile
+import time
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
-import webdataset as wds
 
 from ..base import BaseProcessor
 from ...registry import register_processor
@@ -25,6 +26,98 @@ def _read_manifest_csv(csv_file: str) -> Tuple[pd.DataFrame, str, str]:
     raise ValueError("No recognized timestamp columns found")
 
 
+class _ShardWriter:
+    """Minimal shard writer using Python's tarfile module.
+
+    Replaces webdataset.ShardWriter to avoid the gopen() Windows path issue
+    where drive letters (e.g. D:/) are misinterpreted as URL schemes.
+
+    Produces tar files that are fully compatible with webdataset readers.
+    """
+
+    def __init__(
+        self,
+        output_dir: str,
+        max_count: int = 10_000,
+        max_size: Optional[int] = None,
+    ):
+        self.output_dir = Path(output_dir)
+        self.max_count = max_count
+        self.max_size = max_size  # bytes; None = no limit
+
+        self._shard_idx = 0
+        self._count = 0
+        self._size = 0
+        self._tar: Optional[tarfile.TarFile] = None
+        self._current_path: Optional[Path] = None
+        self._open_shard()
+
+    def _shard_path(self) -> Path:
+        return self.output_dir / f"shard-{self._shard_idx:06d}.tar"
+
+    def _open_shard(self):
+        if self._tar is not None:
+            self._tar.close()
+        self._current_path = self._shard_path()
+        self._tar = tarfile.open(str(self._current_path), "w")
+        self._count = 0
+        self._size = 0
+
+    def _next_shard(self):
+        self._tar.close()
+        self._shard_idx += 1
+        self._open_shard()
+
+    def _add_bytes(self, name: str, data: bytes):
+        """Add a single file entry to the current tar."""
+        buf = io.BytesIO(data)
+        info = tarfile.TarInfo(name=name)
+        info.size = len(data)
+        info.mtime = int(time.time())
+        self._tar.addfile(info, buf)
+        self._size += len(data)
+
+    def write(self, sample: dict):
+        """Write one webdataset sample.
+
+        sample must contain "__key__" and any number of extension→bytes pairs.
+        String values are UTF-8 encoded automatically.
+        """
+        key = sample["__key__"]
+
+        # Roll over shard if needed (check before writing).
+        # Use elif to prevent double _next_shard() when both limits are hit at once,
+        # which would create an empty intermediate shard file.
+        if self._count >= self.max_count:
+            self._next_shard()
+        elif self.max_size and self._size >= self.max_size:
+            self._next_shard()
+
+        for ext, value in sample.items():
+            if ext == "__key__":
+                continue
+            if isinstance(value, str):
+                value = value.encode("utf-8")
+            self._add_bytes(f"{key}.{ext}", value)
+
+        self._count += 1
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    def close(self):
+        if self._tar is not None:
+            self._tar.close()
+            self._tar = None
+
+    @property
+    def shard_count(self) -> int:
+        return self._shard_idx + 1
+
+
 @register_processor("webdataset")
 class WebDatasetProcessor(BaseProcessor):
     name = "webdataset"
@@ -38,25 +131,33 @@ class WebDatasetProcessor(BaseProcessor):
         manifest_path = cfg.paths.manifest
         data, start_col, end_col = _read_manifest_csv(manifest_path)
 
-        # Build sentence lookup
+        # Detect caption column
         sentence_col = None
         for col in ["SENTENCE", "TEXT", "CAPTION"]:
             if col in data.columns:
                 sentence_col = col
                 break
 
-        shard_pattern = os.path.join(output_dir, "shard-%06d.tar")
         max_count = cfg.webdataset.max_shard_count
-        max_size = cfg.webdataset.max_shard_size
+        max_size = cfg.webdataset.max_shard_size or None
 
-        writer_kwargs = {"pattern": shard_pattern, "maxcount": max_count}
-        if max_size:
-            writer_kwargs["maxsize"] = max_size
+        # For video mode: prefer cropped_clips if available, fall back to clips.
+        if mode == "video":
+            cropped_dir = cfg.paths.cropped_clips
+            clips_dir = cfg.paths.clips
+            if cropped_dir and os.path.isdir(cropped_dir) and any(
+                f.endswith(".mp4") for f in os.listdir(cropped_dir)
+            ):
+                video_source_dir = cropped_dir
+                self.logger.info("video mode: using cropped_clips → %s", cropped_dir)
+            else:
+                video_source_dir = clips_dir
+                self.logger.info("video mode: using clips → %s", clips_dir)
 
         written = 0
         skipped = 0
 
-        with wds.ShardWriter(**writer_kwargs) as sink:
+        with _ShardWriter(output_dir, max_count=max_count, max_size=max_size) as sink:
             for _, row in data.iterrows():
                 sentence_name = row.SENTENCE_NAME
                 video_name = row.VIDEO_NAME
@@ -90,7 +191,7 @@ class WebDatasetProcessor(BaseProcessor):
 
                 elif mode == "video":
                     clip_path = os.path.join(
-                        cfg.paths.clips, f"{sentence_name}.mp4"
+                        video_source_dir, f"{sentence_name}.mp4"
                     )
                     if not os.path.exists(clip_path):
                         skipped += 1
@@ -107,10 +208,11 @@ class WebDatasetProcessor(BaseProcessor):
         context.stats["webdataset"] = {
             "written": written,
             "skipped": skipped,
+            "shards": sink.shard_count,
             "output_dir": output_dir,
         }
         self.logger.info(
-            "WebDataset: wrote %d samples, skipped %d -> %s",
-            written, skipped, output_dir,
+            "WebDataset: wrote %d samples in %d shard(s), skipped %d → %s",
+            written, sink.shard_count, skipped, output_dir,
         )
         return context

@@ -25,8 +25,11 @@ def _clip_single_video(args) -> Tuple[str, bool, str]:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         duration = end - start
 
+        import shutil
+        ffmpeg_bin = shutil.which("ffmpeg") or "ffmpeg"
+
         cmd = [
-            "ffmpeg", "-y",
+            ffmpeg_bin, "-y",
             "-ss", str(start),
             "-i", video_path,
             "-t", str(duration),

@@ -22,6 +22,16 @@ def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]
     return result
 
 
+def _is_absolute(path_str: str) -> bool:
+    """Check if a path string is absolute, handling both Windows and POSIX styles.
+
+    On Windows, Path("/abs/path").is_absolute() returns False because there
+    is no drive letter. This helper treats leading '/' as absolute on all
+    platforms so that POSIX-style paths in YAML configs work correctly.
+    """
+    return Path(path_str).is_absolute() or path_str.startswith("/")
+
+
 def resolve_paths(config: Config, project_root: Path) -> Config:
     """Resolve relative paths to absolute paths based on project root."""
     paths = config.paths
@@ -30,7 +40,7 @@ def resolve_paths(config: Config, project_root: Path) -> Config:
         paths.root = str(project_root / "dataset" / config.dataset)
 
     root = Path(paths.root)
-    if not root.is_absolute():
+    if not _is_absolute(paths.root):
         root = project_root / root
         paths.root = str(root)
 
@@ -38,51 +48,56 @@ def resolve_paths(config: Config, project_root: Path) -> Config:
 
     if not paths.videos:
         paths.videos = str(root / "videos")
-    elif not Path(paths.videos).is_absolute():
+    elif not _is_absolute(paths.videos):
         paths.videos = str(project_root / paths.videos)
 
     if not paths.transcripts:
         paths.transcripts = str(root / "transcripts")
-    elif not Path(paths.transcripts).is_absolute():
+    elif not _is_absolute(paths.transcripts):
         paths.transcripts = str(project_root / paths.transcripts)
 
     if not paths.manifest:
         paths.manifest = str(root / "manifest.csv")
-    elif not Path(paths.manifest).is_absolute():
+    elif not _is_absolute(paths.manifest):
         paths.manifest = str(project_root / paths.manifest)
 
     if not paths.landmarks:
         paths.landmarks = str(root / "landmarks" / extractor_name)
-    elif not Path(paths.landmarks).is_absolute():
+    elif not _is_absolute(paths.landmarks):
         paths.landmarks = str(project_root / paths.landmarks)
 
     if not paths.normalized:
         paths.normalized = str(root / "normalized" / extractor_name)
-    elif not Path(paths.normalized).is_absolute():
+    elif not _is_absolute(paths.normalized):
         paths.normalized = str(project_root / paths.normalized)
 
     if not paths.clips:
         paths.clips = str(root / "clips")
-    elif not Path(paths.clips).is_absolute():
+    elif not _is_absolute(paths.clips):
         paths.clips = str(project_root / paths.clips)
+
+    if not paths.cropped_clips:
+        paths.cropped_clips = str(root / "cropped_clips")
+    elif not _is_absolute(paths.cropped_clips):
+        paths.cropped_clips = str(project_root / paths.cropped_clips)
 
     if not paths.webdataset:
         paths.webdataset = str(
             root / "webdataset" / config.pipeline.mode / extractor_name
         )
-    elif not Path(paths.webdataset).is_absolute():
+    elif not _is_absolute(paths.webdataset):
         paths.webdataset = str(project_root / paths.webdataset)
 
     # Resolve download.video_ids_file relative to project root
     vid_file = config.download.video_ids_file
-    if vid_file and not Path(vid_file).is_absolute():
+    if vid_file and not _is_absolute(vid_file):
         config.download.video_ids_file = str(project_root / vid_file)
 
     # Resolve extractor model paths relative to project root
     for attr in ("pose_model_config", "pose_model_checkpoint",
                  "det_model_config", "det_model_checkpoint"):
         val = getattr(config.extractor, attr)
-        if val and not Path(val).is_absolute():
+        if val and not _is_absolute(val):
             setattr(config.extractor, attr, str(project_root / val))
 
     return config

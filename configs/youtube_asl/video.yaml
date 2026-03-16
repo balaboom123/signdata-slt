@@ -4,7 +4,7 @@ dataset: youtube_asl
 
 pipeline:
   mode: video
-  steps: [download, manifest, clip_video, webdataset]
+  steps: [download, manifest, person_localize, clip_video, crop_video, webdataset]
   start_from: null
   stop_at: null
 
@@ -15,7 +15,8 @@ paths:
   manifest: dataset/youtube_asl/manifest.csv
   landmarks: ""
   normalized: ""
-  clips: ""
+  clips: dataset/youtube_asl/clips
+  cropped_clips: dataset/youtube_asl/cropped_clips
   webdataset: ""
 
 download:
@@ -29,3 +30,11 @@ manifest:
   max_text_length: 300
   min_duration: 0.2
   max_duration: 60.0
+
+# Only uncomment fields you actually want to change from the defaults, e.g.:
+# person_localize:
+#   device: "cuda:0"     # use GPU instead of CPU
+#   min_bbox_area: 0.02  # relax if signer occupies a small portion of the frame
+
+# crop_video:
+#   padding: 0.30        # more padding if ASL signers sign wide
