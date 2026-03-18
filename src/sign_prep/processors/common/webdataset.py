@@ -119,15 +119,11 @@ class WebDatasetProcessor(BaseProcessor):
         os.makedirs(output_dir, exist_ok=True)
 
         manifest_path = cfg.paths.manifest
-        data = read_manifest(manifest_path, normalize_columns=False)
+        data = read_manifest(manifest_path, normalize_columns=True)
         start_col, end_col = get_timing_columns(data)
 
-        # Detect caption column
-        sentence_col = None
-        for col in ["SENTENCE", "TEXT", "CAPTION"]:
-            if col in data.columns:
-                sentence_col = col
-                break
+        # Text column (canonical name after normalization)
+        sentence_col = "TEXT" if "TEXT" in data.columns else None
 
         max_count = cfg.webdataset.max_shard_count
         max_size = cfg.webdataset.max_shard_size or None
@@ -150,27 +146,27 @@ class WebDatasetProcessor(BaseProcessor):
 
         with _ShardWriter(output_dir, max_count=max_count, max_size=max_size) as sink:
             for _, row in data.iterrows():
-                sentence_name = row.SENTENCE_NAME
-                video_name = row.VIDEO_NAME
+                sample_id = row.SAMPLE_ID
+                video_id = row.VIDEO_ID
 
                 caption = ""
                 if sentence_col and pd.notna(row.get(sentence_col)):
                     caption = str(row[sentence_col])
 
                 meta = {
-                    "video_id": str(video_name),
-                    "sentence_name": str(sentence_name),
+                    "video_id": str(video_id),
+                    "sample_id": str(sample_id),
                     "start": float(row[start_col]),
                     "end": float(row[end_col]),
                     "extractor": cfg.extractor.name,
                     "mode": mode,
                 }
 
-                sample = {"__key__": sentence_name}
+                sample = {"__key__": sample_id}
 
                 if mode == "pose":
                     npy_path = os.path.join(
-                        cfg.paths.normalized, f"{sentence_name}.npy"
+                        cfg.paths.normalized, f"{sample_id}.npy"
                     )
                     if not os.path.exists(npy_path):
                         skipped += 1
@@ -182,7 +178,7 @@ class WebDatasetProcessor(BaseProcessor):
 
                 elif mode == "video":
                     clip_path = os.path.join(
-                        video_source_dir, f"{sentence_name}.mp4"
+                        video_source_dir, f"{sample_id}.mp4"
                     )
                     if not os.path.exists(clip_path):
                         skipped += 1

@@ -51,8 +51,8 @@ def _build_processing_tasks(
     tasks = []
 
     for _, row in timestamp_data.iterrows():
-        video_name = row.VIDEO_NAME
-        sentence_name = row.SENTENCE_NAME
+        video_name = row.VIDEO_ID
+        sentence_name = row.SAMPLE_ID
         start, end = row[start_col], row[end_col]
 
         video_path = os.path.join(video_dir, f"{video_name}.mp4")
@@ -304,11 +304,11 @@ class ExtractProcessor(BaseProcessor):
         if context.manifest_df is not None:
             timestamp_data_full = context.manifest_df
         else:
-            timestamp_data_full = read_manifest(manifest_path, normalize_columns=False)
+            timestamp_data_full = read_manifest(manifest_path, normalize_columns=True)
 
         start_col, end_col = get_timing_columns(timestamp_data_full)
         timestamp_data = timestamp_data_full[
-            ["VIDEO_NAME", "SENTENCE_NAME", start_col, end_col]
+            ["VIDEO_ID", "SAMPLE_ID", start_col, end_col]
         ].dropna()
 
         landmarks_dir = cfg.paths.landmarks

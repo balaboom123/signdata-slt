@@ -3,7 +3,7 @@
 import importlib
 import pkgutil
 
-from .base import BaseDataset
+from .base import DatasetAdapter, BaseDataset
 
 # Auto-discover and import all dataset modules to trigger @register_dataset.
 for _, _module_name, _ in pkgutil.iter_modules(__path__):
@@ -13,4 +13,9 @@ for _, _module_name, _ in pkgutil.iter_modules(__path__):
 from .youtube_asl import YouTubeASLDataset
 from .how2sign import How2SignDataset
 
-__all__ = ["BaseDataset", "YouTubeASLDataset", "How2SignDataset"]
+__all__ = [
+    "DatasetAdapter",
+    "BaseDataset",
+    "YouTubeASLDataset",
+    "How2SignDataset",
+]

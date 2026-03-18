@@ -38,8 +38,26 @@ SUCCESS_FILENAME = "_SUCCESS.json"
 # ---------------------------------------------------------------------------
 
 STAGE_HASH_FIELDS: Dict[str, List[str]] = {
-    "acquire": ["source"],
-    "manifest": ["source"],
+    "acquire": [
+        "download.video_ids_file",
+        "download.languages",
+        "download.format",
+        "download.rate_limit",
+        "download.concurrent_fragments",
+        "paths.videos",
+        "paths.transcripts",
+    ],
+    "manifest": [
+        "manifest.max_text_length",
+        "manifest.min_duration",
+        "manifest.max_duration",
+        "manifest.fix_encoding",
+        "manifest.normalize_whitespace",
+        "manifest.lowercase",
+        "manifest.strip_punctuation",
+        "paths.transcripts",
+        "paths.manifest",
+    ],
     "detect_person": [
         "detect_person.model",
         "detect_person.backend",

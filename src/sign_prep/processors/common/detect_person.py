@@ -234,7 +234,7 @@ def _detect_persons_batch(
 class DetectPersonProcessor(BaseProcessor):
     """Detect the signer across video segments.
 
-    Reads VIDEO_NAME / SENTENCE_NAME / timestamps from the manifest,
+    Reads VIDEO_ID / SAMPLE_ID / timestamps from the manifest,
     samples frames from the original video, runs YOLOv8-nano person
     detection, unions bboxes across sampled frames, and writes results
     back to the manifest CSV.
@@ -255,7 +255,7 @@ class DetectPersonProcessor(BaseProcessor):
         # ----------------------------------------------------------------
         # Load manifest
         # ----------------------------------------------------------------
-        data = read_manifest(manifest_path, normalize_columns=False)
+        data = read_manifest(manifest_path, normalize_columns=True)
         start_col, end_col = get_timing_columns(data)
 
         # If columns already exist from a previous run, we skip rows that
@@ -309,7 +309,7 @@ class DetectPersonProcessor(BaseProcessor):
         _CHECKPOINT_EVERY = 50
 
         for idx, row in tqdm(pending.iterrows(), total=len(pending), desc="Detecting persons"):
-            video_name = row["VIDEO_NAME"]
+            video_name = row["VIDEO_ID"]
             video_path = os.path.join(video_dir, f"{video_name}.mp4")
 
             if not os.path.exists(video_path):
@@ -333,7 +333,7 @@ class DetectPersonProcessor(BaseProcessor):
                     if not frames_meta:
                         self.logger.warning(
                             "Could not sample frames for %s, using fallback.",
-                            row["SENTENCE_NAME"],
+                            row["SAMPLE_ID"],
                         )
                         results_map[idx] = self._fallback_row(video_path)
                         fallback += 1
@@ -381,7 +381,7 @@ class DetectPersonProcessor(BaseProcessor):
 
                 except Exception as e:
                     self.logger.error(
-                        "Error processing %s: %s", row.get("SENTENCE_NAME", "?"), e
+                        "Error processing %s: %s", row.get("SAMPLE_ID", "?"), e
                     )
                     results_map[idx] = self._fallback_row(video_path)
                     errors += 1

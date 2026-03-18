@@ -19,6 +19,7 @@ from tqdm import tqdm
 
 from ..base import BaseProcessor
 from ...registry import register_processor
+from ...utils.manifest import read_manifest
 
 
 # ---------------------------------------------------------------------------
@@ -164,7 +165,7 @@ class CropVideoProcessor(BaseProcessor):
         # ----------------------------------------------------------------
         # Load manifest — must have bbox columns from detect_person
         # ----------------------------------------------------------------
-        data = pd.read_csv(manifest_path, delimiter="\t", on_bad_lines="skip")
+        data = read_manifest(manifest_path, normalize_columns=True)
 
         required_cols = {"BBOX_X1", "BBOX_Y1", "BBOX_X2", "BBOX_Y2", "PERSON_DETECTED"}
         missing = required_cols - set(data.columns)
@@ -175,8 +176,8 @@ class CropVideoProcessor(BaseProcessor):
             )
 
         data = data[
-            ["SENTENCE_NAME", "BBOX_X1", "BBOX_Y1", "BBOX_X2", "BBOX_Y2", "PERSON_DETECTED"]
-        ].dropna(subset=["SENTENCE_NAME"])
+            ["SAMPLE_ID", "BBOX_X1", "BBOX_Y1", "BBOX_X2", "BBOX_Y2", "PERSON_DETECTED"]
+        ].dropna(subset=["SAMPLE_ID"])
 
         # ----------------------------------------------------------------
         # Build task list
@@ -185,8 +186,8 @@ class CropVideoProcessor(BaseProcessor):
         missing_clips = 0
 
         for _, row in data.iterrows():
-            clip_path = os.path.join(clips_dir, f"{row.SENTENCE_NAME}.mp4")
-            out_path = os.path.join(cropped_dir, f"{row.SENTENCE_NAME}.mp4")
+            clip_path = os.path.join(clips_dir, f"{row.SAMPLE_ID}.mp4")
+            out_path = os.path.join(cropped_dir, f"{row.SAMPLE_ID}.mp4")
 
             if not os.path.exists(clip_path):
                 missing_clips += 1

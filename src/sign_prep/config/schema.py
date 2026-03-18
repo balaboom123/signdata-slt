@@ -16,6 +16,11 @@ class ManifestConfig(BaseModel):
     max_text_length: int = 300
     min_duration: float = 0.2
     max_duration: float = 60.0
+    # Text processing options (passed to normalize_text)
+    fix_encoding: bool = True
+    normalize_whitespace: bool = True
+    lowercase: bool = False
+    strip_punctuation: bool = False
 
 
 class ExtractorConfig(BaseModel):

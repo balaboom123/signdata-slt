@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
 from ..config.schema import Config
-from ..datasets.base import BaseDataset
+from ..datasets.base import DatasetAdapter
 
 
 @dataclass
@@ -16,7 +16,7 @@ class PipelineContext:
     """Shared state passed between pipeline processors."""
 
     config: Config
-    dataset: BaseDataset
+    dataset: DatasetAdapter
     project_root: Path
 
     # Populated by processors as they run

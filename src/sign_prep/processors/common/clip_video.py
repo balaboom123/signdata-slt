@@ -71,17 +71,17 @@ class ClipVideoProcessor(BaseProcessor):
 
         os.makedirs(clips_dir, exist_ok=True)
 
-        data = read_manifest(manifest_path, normalize_columns=False)
+        data = read_manifest(manifest_path, normalize_columns=True)
         start_col, end_col = get_timing_columns(data)
-        data = data[["VIDEO_NAME", "SENTENCE_NAME", start_col, end_col]].dropna()
+        data = data[["VIDEO_ID", "SAMPLE_ID", start_col, end_col]].dropna()
 
         codec = cfg.clip_video.codec
         resize = cfg.clip_video.resize
 
         tasks = []
         for _, row in data.iterrows():
-            vpath = os.path.join(video_dir, f"{row.VIDEO_NAME}.mp4")
-            opath = os.path.join(clips_dir, f"{row.SENTENCE_NAME}.mp4")
+            vpath = os.path.join(video_dir, f"{row.VIDEO_ID}.mp4")
+            opath = os.path.join(clips_dir, f"{row.SAMPLE_ID}.mp4")
             if not os.path.exists(vpath):
                 continue
             tasks.append((
