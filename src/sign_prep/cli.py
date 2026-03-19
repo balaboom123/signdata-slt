@@ -49,4 +49,17 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Config overrides: key=value (e.g. processing.max_workers=8)",
     )
 
+    # --- experiment subcommand ---
+    exp_parser = subparsers.add_parser(
+        "experiment", help="Run a multi-job experiment",
+    )
+    exp_parser.add_argument(
+        "config",
+        help="Path to YAML experiment config file",
+    )
+    exp_parser.add_argument(
+        "--force-all", action="store_true", default=False,
+        help="Force rerun of all stages in every job",
+    )
+
     return parser.parse_args(argv)

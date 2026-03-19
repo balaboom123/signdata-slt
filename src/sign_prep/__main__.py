@@ -1,4 +1,4 @@
-"""Entry point: python -m sign_prep run <config.yaml>"""
+"""Entry point: python -m sign_prep run|experiment <config.yaml>"""
 
 import logging
 import sys
@@ -22,8 +22,13 @@ def main():
     args = parse_args()
 
     if args.command is None:
-        print("Usage: python -m sign_prep run <config.yaml> [options]")
-        print("Run 'python -m sign_prep run --help' for details.")
+        print("Usage: python -m sign_prep <command> <config.yaml> [options]")
+        print()
+        print("Commands:")
+        print("  run         Run a single preprocessing job")
+        print("  experiment  Run a multi-job experiment")
+        print()
+        print("Run 'python -m sign_prep <command> --help' for details.")
         sys.exit(1)
 
     if args.command == "run":
@@ -60,6 +65,21 @@ def main():
             force_all=args.force_all,
         )
         runner.run()
+
+    elif args.command == "experiment":
+        from sign_prep.config.experiment import load_experiment
+        from sign_prep.pipeline.experiment import ExperimentRunner
+
+        experiment = load_experiment(args.config)
+        runner = ExperimentRunner(
+            experiment, force_all=args.force_all,
+        )
+        results = runner.run()
+
+        # Exit with error code if any job failed
+        failed = sum(1 for r in results if r.status == "failed")
+        if failed:
+            sys.exit(1)
 
 
 if __name__ == "__main__":

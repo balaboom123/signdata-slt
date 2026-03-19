@@ -2,6 +2,7 @@
 
 from .context import PipelineContext
 from .runner import PipelineRunner
+from .experiment import ExperimentRunner, JobResult
 from .recipes import RECIPES, OPTIONAL_STAGES, get_steps, should_run_stage
 from .checkpoint import (
     compute_stage_hash,
@@ -18,6 +19,8 @@ from .checkpoint import (
 __all__ = [
     "PipelineContext",
     "PipelineRunner",
+    "ExperimentRunner",
+    "JobResult",
     "RECIPES",
     "OPTIONAL_STAGES",
     "get_steps",

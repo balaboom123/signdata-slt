@@ -108,6 +108,7 @@ def resolve_paths(config: Config, project_root: Path) -> Config:
 def load_config(
     yaml_path: str,
     overrides: Optional[List[str]] = None,
+    dict_overrides: Optional[Dict[str, Any]] = None,
 ) -> Config:
     """Load config from YAML file.
 
@@ -115,6 +116,7 @@ def load_config(
     1. Pydantic defaults (hardcoded in schema)
     2. YAML config file
     3. CLI overrides (key=value pairs)
+    4. Dict overrides (from experiment layer, already typed)
     """
     yaml_path = os.path.abspath(yaml_path)
     config_dir = Path(yaml_path).parent
@@ -129,11 +131,26 @@ def load_config(
     with open(yaml_path, "r") as f:
         raw = yaml.safe_load(f) or {}
 
+    # Apply CLI overrides
+    if overrides:
+        for override in overrides:
+            if "=" not in override:
+                raise ValueError(f"Override must be key=value, got: {override}")
+            key, value = override.split("=", 1)
+            _set_nested(raw, key, _parse_value(value))
+
+    # Apply dict overrides (from experiment layer — values already typed)
+    if dict_overrides:
+        for key, value in dict_overrides.items():
+            _set_nested(raw, key, value)
+
+    # Validate required fields after all overrides are applied, so
+    # experiment-level overrides (e.g. changing dataset) take effect
+    # before validation.
     dataset_name = raw.get("dataset")
     if not dataset_name:
         raise ValueError("Config must specify 'dataset' field")
 
-    # Validate recipe is present
     if "recipe" not in raw:
         raise ValueError(
             "Config must specify 'recipe' field (either 'pose' or 'video')."
@@ -145,18 +162,10 @@ def load_config(
             f"Available: {list(DATASET_REGISTRY.keys())}"
         )
 
-    # Apply CLI overrides
-    if overrides:
-        for override in overrides:
-            if "=" not in override:
-                raise ValueError(f"Override must be key=value, got: {override}")
-            key, value = override.split("=", 1)
-            _set_nested(raw, key, _parse_value(value))
-
     config = Config(**raw)
     config = resolve_paths(config, project_root)
 
-    # Optionally run dataset-specific validation
+    # Run dataset-specific validation against the final config
     dataset_cls = DATASET_REGISTRY[dataset_name]
     dataset_cls.validate_config(config)
 

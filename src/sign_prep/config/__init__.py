@@ -2,5 +2,12 @@
 
 from .schema import Config
 from .loader import load_config
+from .experiment import ExperimentConfig, JobEntry, load_experiment
 
-__all__ = ["Config", "load_config"]
+__all__ = [
+    "Config",
+    "load_config",
+    "ExperimentConfig",
+    "JobEntry",
+    "load_experiment",
+]
