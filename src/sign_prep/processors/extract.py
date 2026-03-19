@@ -13,25 +13,35 @@ import numpy as np
 import pandas as pd
 import psutil
 
-from ..base import BaseProcessor
-from ...registry import register_processor
-from ...utils.video import FPSSampler, validate_video_file, get_video_fps
-from ...utils.files import get_video_filenames
-from ...utils.manifest import read_manifest, get_timing_columns
+from .base import BaseProcessor
+from ..registry import register_processor
+from ..utils.video import FPSSampler, validate_video_file, get_video_fps
+from ..utils.files import get_video_filenames
+from ..utils.manifest import read_manifest, get_timing_columns
 
 
 def _build_processing_tasks(
     timestamp_data: pd.DataFrame,
     video_dir: str,
     output_dir: str,
-    start_col: str,
-    end_col: str,
+    start_col: Optional[str] = None,
+    end_col: Optional[str] = None,
     existing_files: Optional[List[str]] = None,
     min_duration: float = 0.2,
     max_duration: float = 60.0,
     fps_range: Optional[Tuple[float, float]] = None,
+    clipped_input: bool = False,
 ) -> Tuple[List[Tuple[str, float, float, str]], Dict[str, int]]:
-    """Build task list from manifest with validation and filtering."""
+    """Build task list from manifest with validation and filtering.
+
+    Parameters
+    ----------
+    clipped_input : bool
+        When True, video files are named ``SAMPLE_ID.mp4`` (output of
+        clip_video/crop_video) and are already temporally segmented.
+        The entire file is processed (start=0, end=whole file) and
+        duration filtering is skipped.
+    """
     import logging
     logger = logging.getLogger("sign_prep.extract")
 
@@ -53,22 +63,31 @@ def _build_processing_tasks(
     for _, row in timestamp_data.iterrows():
         video_name = row.VIDEO_ID
         sentence_name = row.SAMPLE_ID
-        start, end = row[start_col], row[end_col]
 
-        video_path = os.path.join(video_dir, f"{video_name}.mp4")
+        if clipped_input:
+            # After clip_video/crop_video: files are SAMPLE_ID.mp4,
+            # already temporally segmented — process whole file.
+            video_path = os.path.join(video_dir, f"{sentence_name}.mp4")
+            start, end = 0.0, 86400.0  # Sentinel; workers stop at EOF
+        else:
+            video_path = os.path.join(video_dir, f"{video_name}.mp4")
+            start, end = row[start_col], row[end_col]
+
         output_path = os.path.join(output_dir, f"{sentence_name}.npy")
 
         if sentence_name in existing_set:
             stats["existing_files"] += 1
             continue
 
-        seg_dur = float(end - start)
-        if seg_dur < min_duration:
-            stats["too_short"] += 1
-            continue
-        if seg_dur > max_duration:
-            stats["too_long"] += 1
-            continue
+        # Skip duration filtering for clipped input (already filtered)
+        if not clipped_input:
+            seg_dur = float(end - start)
+            if seg_dur < min_duration:
+                stats["too_short"] += 1
+                continue
+            if seg_dur > max_duration:
+                stats["too_long"] += 1
+                continue
 
         if video_path not in video_validation_cache:
             video_validation_cache[video_path] = validate_video_file(video_path)
@@ -162,8 +181,8 @@ def _process_segment_mediapipe(args):
     import logging
     logger = logging.getLogger("sign_prep.extract")
 
-    from ...config.schema import ExtractorConfig
-    from ...extractors.mediapipe import MediaPipeExtractor
+    from ..config.schema import ExtractorConfig
+    from ..extractors.mediapipe import MediaPipeExtractor
 
     video_capture = None
     extractor = None
@@ -224,8 +243,8 @@ def _process_segment_mmpose(args):
 
     global _detector, _pose_estimator
 
-    from ...config.schema import ExtractorConfig
-    from ...extractors.mmpose import MMPoseExtractor
+    from ..config.schema import ExtractorConfig
+    from ..extractors.mmpose import MMPoseExtractor
 
     video_capture = None
     try:
@@ -298,7 +317,7 @@ class ExtractProcessor(BaseProcessor):
 
     def run(self, context):
         cfg = self.config
-        manifest_path = cfg.paths.manifest
+        manifest_path = str(context.manifest_path)
 
         # Load manifest
         if context.manifest_df is not None:
@@ -306,10 +325,18 @@ class ExtractProcessor(BaseProcessor):
         else:
             timestamp_data_full = read_manifest(manifest_path, normalize_columns=True)
 
-        start_col, end_col = get_timing_columns(timestamp_data_full)
-        timestamp_data = timestamp_data_full[
-            ["VIDEO_ID", "SAMPLE_ID", start_col, end_col]
-        ].dropna()
+        # After clip_video/crop_video, files are SAMPLE_ID.mp4 and already
+        # temporally segmented — no timestamp slicing or duration filtering.
+        clipped_input = context.video_dir_producer in ("clip_video", "crop_video")
+
+        if clipped_input:
+            timestamp_data = timestamp_data_full[["VIDEO_ID", "SAMPLE_ID"]].copy()
+            start_col, end_col = None, None
+        else:
+            start_col, end_col = get_timing_columns(timestamp_data_full)
+            timestamp_data = timestamp_data_full[
+                ["VIDEO_ID", "SAMPLE_ID", start_col, end_col]
+            ].dropna()
 
         landmarks_dir = cfg.paths.landmarks
         os.makedirs(landmarks_dir, exist_ok=True)
@@ -322,7 +349,7 @@ class ExtractProcessor(BaseProcessor):
 
         tasks, stats = _build_processing_tasks(
             timestamp_data=timestamp_data,
-            video_dir=cfg.paths.videos,
+            video_dir=str(context.video_dir),
             output_dir=landmarks_dir,
             start_col=start_col,
             end_col=end_col,
@@ -330,6 +357,7 @@ class ExtractProcessor(BaseProcessor):
             min_duration=cfg.processing.min_duration,
             max_duration=cfg.processing.max_duration,
             fps_range=fps_range,
+            clipped_input=clipped_input,
         )
 
         if not tasks:

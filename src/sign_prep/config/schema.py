@@ -1,26 +1,7 @@
 """Pydantic configuration models."""
 
 from pydantic import BaseModel, field_validator
-from typing import Optional, List, Literal
-
-
-class DownloadConfig(BaseModel):
-    video_ids_file: str = ""
-    languages: List[str] = ["en"]
-    format: str = "worstvideo[height>=720][fps>=24]/bestvideo[height>=480]"
-    rate_limit: str = "5M"
-    concurrent_fragments: int = 5
-
-
-class ManifestConfig(BaseModel):
-    max_text_length: int = 300
-    min_duration: float = 0.2
-    max_duration: float = 60.0
-    # Text processing options (passed to normalize_text)
-    fix_encoding: bool = True
-    normalize_whitespace: bool = True
-    lowercase: bool = False
-    strip_punctuation: bool = False
+from typing import Any, Dict, Optional, List, Literal
 
 
 class ExtractorConfig(BaseModel):
@@ -75,6 +56,7 @@ class ProcessingConfig(BaseModel):
     skip_existing: bool = True
     min_duration: float = 0.2
     max_duration: float = 60.0
+    signer_policy: Literal["primary_signer", "single_person", "any"] = "primary_signer"
 
 
 class WebDatasetConfig(BaseModel):
@@ -88,6 +70,7 @@ class ClipVideoConfig(BaseModel):
 
 
 class DetectPersonConfig(BaseModel):
+    enabled: bool = False
     model: str = "yolov8n.pt"
     backend: Literal["ultralytics"] = "ultralytics"
     confidence_threshold: float = 0.5
@@ -100,15 +83,9 @@ class DetectPersonConfig(BaseModel):
 
 
 class CropVideoConfig(BaseModel):
+    enabled: bool = False
     padding: float = 0.25   # Padding ratio around the detected bbox
     codec: str = "libx264"
-
-
-class PipelineConfig(BaseModel):
-    mode: Literal["pose", "video"] = "pose"
-    steps: List[str] = []
-    start_from: Optional[str] = None
-    stop_at: Optional[str] = None
 
 
 class PathsConfig(BaseModel):
@@ -125,11 +102,19 @@ class PathsConfig(BaseModel):
 
 class Config(BaseModel):
     dataset: str
-    pipeline: PipelineConfig = PipelineConfig()
+    recipe: Literal["pose", "video"] = "pose"
+    run_name: str = "default"
+    start_from: Optional[str] = None
+    stop_at: Optional[str] = None
+
+    # Source config — only accessed by dataset adapter
+    source: Dict[str, Any] = {}
+
+    # Per-stage extension point — keyed by stage name
+    stage_config: Dict[str, Dict[str, Any]] = {}
+
     extractor: ExtractorConfig = ExtractorConfig()
     paths: PathsConfig = PathsConfig()
-    download: DownloadConfig = DownloadConfig()
-    manifest: ManifestConfig = ManifestConfig()
     normalize: NormalizeConfig = NormalizeConfig()
     processing: ProcessingConfig = ProcessingConfig()
     webdataset: WebDatasetConfig = WebDatasetConfig()

@@ -9,9 +9,9 @@ from typing import List, Tuple
 import pandas as pd
 from tqdm import tqdm
 
-from ..base import BaseProcessor
-from ...registry import register_processor
-from ...utils.manifest import read_manifest, get_timing_columns
+from .base import BaseProcessor
+from ..registry import register_processor
+from ..utils.manifest import read_manifest, get_timing_columns
 
 
 def _clip_single_video(args) -> Tuple[str, bool, str]:
@@ -65,8 +65,8 @@ class ClipVideoProcessor(BaseProcessor):
 
     def run(self, context):
         cfg = self.config
-        manifest_path = cfg.paths.manifest
-        video_dir = cfg.paths.videos
+        manifest_path = str(context.manifest_path)
+        video_dir = str(context.video_dir)
         clips_dir = cfg.paths.clips
 
         os.makedirs(clips_dir, exist_ok=True)

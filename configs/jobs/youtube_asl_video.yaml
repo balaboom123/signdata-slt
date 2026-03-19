@@ -1,0 +1,35 @@
+dataset: youtube_asl
+recipe: video
+run_name: default
+
+paths:
+  root: dataset/youtube_asl
+
+source:
+  video_ids_file: assets/youtube-asl_youtube_asl_video_ids.txt
+  languages: [en, ase, en-US, en-CA, en-GB, en-AU]
+  download_format: "worstvideo[height>=720][fps>=23]/bestvideo[height>=480]"
+  rate_limit: "5M"
+  concurrent_fragments: 5
+  max_text_length: 300
+  min_duration: 0.2
+  max_duration: 60.0
+  text_processing:
+    lowercase: false
+
+extractor:
+  name: mediapipe
+
+detect_person:
+  enabled: true
+  model: "yolov8n.pt"
+  confidence_threshold: 0.5
+  device: "cpu"
+
+crop_video:
+  enabled: true
+  padding: 0.25
+
+processing:
+  target_fps: 24.0
+  frame_skip: 2

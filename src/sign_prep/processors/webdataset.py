@@ -11,9 +11,9 @@ from typing import Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from ..base import BaseProcessor
-from ...registry import register_processor
-from ...utils.manifest import read_manifest, get_timing_columns
+from .base import BaseProcessor
+from ..registry import register_processor
+from ..utils.manifest import read_manifest, get_timing_columns
 
 
 class _ShardWriter:
@@ -114,11 +114,11 @@ class WebDatasetProcessor(BaseProcessor):
 
     def run(self, context):
         cfg = self.config
-        mode = cfg.pipeline.mode
+        mode = cfg.recipe
         output_dir = cfg.paths.webdataset
         os.makedirs(output_dir, exist_ok=True)
 
-        manifest_path = cfg.paths.manifest
+        manifest_path = str(context.manifest_path)
         data = read_manifest(manifest_path, normalize_columns=True)
         start_col, end_col = get_timing_columns(data)
 
@@ -128,18 +128,12 @@ class WebDatasetProcessor(BaseProcessor):
         max_count = cfg.webdataset.max_shard_count
         max_size = cfg.webdataset.max_shard_size or None
 
-        # For video mode: prefer cropped_clips if available, fall back to clips.
+        # For video mode: use context.video_dir which the runner has already
+        # set to the correct source (cropped_clips after crop_video, clips
+        # after clip_video, or raw videos otherwise).
         if mode == "video":
-            cropped_dir = cfg.paths.cropped_clips
-            clips_dir = cfg.paths.clips
-            if cropped_dir and os.path.isdir(cropped_dir) and any(
-                f.endswith(".mp4") for f in os.listdir(cropped_dir)
-            ):
-                video_source_dir = cropped_dir
-                self.logger.info("video mode: using cropped_clips → %s", cropped_dir)
-            else:
-                video_source_dir = clips_dir
-                self.logger.info("video mode: using clips → %s", clips_dir)
+            video_source_dir = str(context.video_dir)
+            self.logger.info("video mode: using video_dir → %s", video_source_dir)
 
         written = 0
         skipped = 0

@@ -1,0 +1,20 @@
+dataset: how2sign
+recipe: pose
+run_name: default
+
+paths:
+  root: dataset/how2sign
+  videos: dataset/how2sign/videos
+  manifest: dataset/how2sign/how2sign_realigned_val.csv
+
+extractor:
+  name: mediapipe
+
+normalize:
+  keypoint_preset: mediapipe_553_to_85
+  mode: xy_isotropic_z_minmax
+  mask_empty_frames: true
+
+processing:
+  target_fps: 24.0
+  frame_skip: 2

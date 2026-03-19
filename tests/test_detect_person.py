@@ -33,14 +33,14 @@ from sign_prep.config.schema import (
     DetectPersonConfig,
     PathsConfig,
 )
-from sign_prep.processors.common.detect_person import (
+from sign_prep.processors.detect_person import (
     _union_bboxes,
     _sample_frames,
     _sample_frames_uniform,
     _sample_frames_skip,
     _detect_persons_batch,
 )
-from sign_prep.processors.common.crop_video import _crop_single_video, _parse_bool
+from sign_prep.processors.crop_video import _crop_single_video, _parse_bool
 import sign_prep.processors  # noqa: F401 – trigger registrations
 from sign_prep.registry import PROCESSOR_REGISTRY
 
@@ -54,7 +54,8 @@ def minimal_config(tmp_path):
     """Config with tmp paths; no real files required."""
     return Config(
         dataset="youtube_asl",
-        pipeline={"mode": "video", "steps": ["detect_person", "clip_video", "crop_video"]},
+        recipe="video",
+        source={"video_ids_file": "/tmp/ids.txt"},
         paths={
             "root": str(tmp_path),
             "videos": str(tmp_path / "videos"),
@@ -62,6 +63,8 @@ def minimal_config(tmp_path):
             "clips": str(tmp_path / "clips"),
             "cropped_clips": str(tmp_path / "cropped_clips"),
         },
+        detect_person={"enabled": True},
+        crop_video={"enabled": True},
     )
 
 
@@ -223,11 +226,11 @@ class TestCropGeometry:
             # output does not exist yet (so we proceed); clip does exist
             return path != output_path
 
-        with patch("sign_prep.processors.common.crop_video.os.path.exists",
+        with patch("sign_prep.processors.crop_video.os.path.exists",
                    side_effect=fake_exists), \
-             patch("sign_prep.processors.common.crop_video.os.makedirs"), \
-             patch("sign_prep.processors.common.crop_video.cv2.VideoCapture") as mock_cap, \
-             patch("sign_prep.processors.common.crop_video.subprocess.run", side_effect=fake_run):
+             patch("sign_prep.processors.crop_video.os.makedirs"), \
+             patch("sign_prep.processors.crop_video.cv2.VideoCapture") as mock_cap, \
+             patch("sign_prep.processors.crop_video.subprocess.run", side_effect=fake_run):
 
             cap_instance = MagicMock()
             cap_instance.isOpened.return_value = True
@@ -302,10 +305,10 @@ class TestCropGeometry:
         def fake_exists(path):
             return path != output_path  # clip exists, output does not
 
-        with patch("sign_prep.processors.common.crop_video.os.path.exists",
+        with patch("sign_prep.processors.crop_video.os.path.exists",
                    side_effect=fake_exists), \
-             patch("sign_prep.processors.common.crop_video.os.makedirs"), \
-             patch("sign_prep.processors.common.crop_video.subprocess.run", side_effect=fake_run):
+             patch("sign_prep.processors.crop_video.os.makedirs"), \
+             patch("sign_prep.processors.crop_video.subprocess.run", side_effect=fake_run):
 
             name, ok, msg = _crop_single_video((
                 clip_path, output_path,
@@ -345,13 +348,14 @@ class TestDetectPersonManifest:
     """Test manifest reading, writing, and resume logic without real video."""
 
     def _make_processor(self, config):
-        from sign_prep.processors.common.detect_person import DetectPersonProcessor
+        from sign_prep.processors.detect_person import DetectPersonProcessor
         return DetectPersonProcessor(config)
 
     def test_skips_already_processed_rows(self, manifest_with_bbox, tmp_path):
         """Rows where PERSON_DETECTED is already set must be skipped."""
         cfg = Config(
             dataset="youtube_asl",
+            source={"video_ids_file": "/tmp/ids.txt"},
             paths={
                 "root": str(tmp_path),
                 "videos": str(tmp_path / "videos"),
@@ -368,7 +372,7 @@ class TestDetectPersonManifest:
 
     def test_fallback_writes_full_frame_bbox(self, tmp_path):
         """_fallback_row with non-existent video returns 0,0,0,0."""
-        from sign_prep.processors.common.detect_person import DetectPersonProcessor
+        from sign_prep.processors.detect_person import DetectPersonProcessor
         result = DetectPersonProcessor._fallback_row("/nonexistent/video.mp4")
         assert result["PERSON_DETECTED"] is False
         assert result["BBOX_X1"] == 0.0
@@ -378,6 +382,7 @@ class TestDetectPersonManifest:
         """After a successful (mocked) run, manifest must have BBOX_* columns."""
         cfg = Config(
             dataset="youtube_asl",
+            source={"video_ids_file": "/tmp/ids.txt"},
             paths={
                 "root": str(tmp_path),
                 "videos": str(tmp_path / "videos"),
@@ -401,10 +406,10 @@ class TestDetectPersonManifest:
 
         mock_model = MagicMock()
 
-        with patch("sign_prep.processors.common.detect_person.YOLO", return_value=mock_model), \
-             patch("sign_prep.processors.common.detect_person._sample_frames",
+        with patch("sign_prep.processors.detect_person.YOLO", return_value=mock_model), \
+             patch("sign_prep.processors.detect_person._sample_frames",
                    side_effect=fake_sample_frames), \
-             patch("sign_prep.processors.common.detect_person._detect_persons_batch",
+             patch("sign_prep.processors.detect_person._detect_persons_batch",
                    side_effect=fake_detect_batch), \
              patch("os.path.exists", return_value=True):
 
@@ -414,21 +419,29 @@ class TestDetectPersonManifest:
                 config=cfg,
                 dataset=YouTubeASLDataset(),
                 project_root=tmp_path,
+                manifest_path=sample_manifest,
+                video_dir=tmp_path / "videos",
             )
             ctx = processor.run(ctx)
 
-        # Reload manifest and verify
-        df = pd.read_csv(sample_manifest, sep="\t")
+        # Reload stage manifest (detect_person writes a derived manifest)
+        stage_manifest = tmp_path / "detect_person" / "default" / "manifest.csv"
+        df = pd.read_csv(stage_manifest, sep="\t")
         for col in ["BBOX_X1", "BBOX_Y1", "BBOX_X2", "BBOX_Y2", "PERSON_DETECTED"]:
             assert col in df.columns, f"Missing column: {col}"
 
         # All rows should now have PERSON_DETECTED set (not NaN)
         assert df["PERSON_DETECTED"].notna().all()
 
+        # context.manifest_df should also be updated
+        assert ctx.manifest_df is not None
+        assert "PERSON_DETECTED" in ctx.manifest_df.columns
+
     def test_fallback_when_no_person_detected(self, sample_manifest, tmp_path):
         """When YOLOv8 returns no bboxes, PERSON_DETECTED must be False."""
         cfg = Config(
             dataset="youtube_asl",
+            source={"video_ids_file": "/tmp/ids.txt"},
             paths={
                 "root": str(tmp_path),
                 "videos": str(tmp_path / "videos"),
@@ -441,10 +454,10 @@ class TestDetectPersonManifest:
 
         fake_frame = np.zeros((480, 640, 3), dtype=np.uint8)
 
-        with patch("sign_prep.processors.common.detect_person.YOLO", return_value=MagicMock()), \
-             patch("sign_prep.processors.common.detect_person._sample_frames",
+        with patch("sign_prep.processors.detect_person.YOLO", return_value=MagicMock()), \
+             patch("sign_prep.processors.detect_person._sample_frames",
                    return_value=[(fake_frame, 640, 480)] * 5), \
-             patch("sign_prep.processors.common.detect_person._detect_persons_batch",
+             patch("sign_prep.processors.detect_person._detect_persons_batch",
                    return_value=[[] for _ in range(5)]), \
              patch("os.path.exists", return_value=True):
 
@@ -454,10 +467,13 @@ class TestDetectPersonManifest:
                 config=cfg,
                 dataset=YouTubeASLDataset(),
                 project_root=tmp_path,
+                manifest_path=sample_manifest,
+                video_dir=tmp_path / "videos",
             )
             ctx = processor.run(ctx)
 
-        df = pd.read_csv(sample_manifest, sep="\t")
+        stage_manifest = tmp_path / "detect_person" / "default" / "manifest.csv"
+        df = pd.read_csv(stage_manifest, sep="\t")
         # All rows should be fallback
         assert (df["PERSON_DETECTED"] == False).all()  # noqa: E712
         # Stats should reflect fallback count
@@ -475,20 +491,12 @@ class TestPipelineRegistration:
     def test_crop_video_registered(self):
         assert "crop_video" in PROCESSOR_REGISTRY
 
-    def test_new_steps_in_video_pipeline(self):
-        """PipelineRunner should build without error for the new video steps."""
-        from sign_prep.pipeline.runner import PipelineRunner
-        cfg = Config(
-            dataset="youtube_asl",
-            pipeline={
-                "mode": "video",
-                "steps": ["detect_person", "clip_video", "crop_video", "webdataset"],
-            },
-        )
-        runner = PipelineRunner(cfg)
-        names = [p.name for p in runner.processors]
-        assert "detect_person" in names
-        assert "crop_video" in names
+    def test_new_steps_in_video_recipe(self):
+        """get_steps for video recipe includes detect_person and crop_video."""
+        from sign_prep.pipeline.recipes import get_steps
+        steps = get_steps("video")
+        assert "detect_person" in steps
+        assert "crop_video" in steps
 
 
 # ===========================================================================

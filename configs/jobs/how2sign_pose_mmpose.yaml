@@ -1,6 +1,14 @@
+dataset: how2sign
+recipe: pose
+run_name: default
+
+paths:
+  root: dataset/how2sign
+  videos: dataset/how2sign/videos
+  manifest: dataset/how2sign/how2sign_realigned_val.csv
+
 extractor:
   name: mmpose
-  max_workers: 4
   bbox_threshold: 0.5
   keypoint_threshold: 0.3
   add_visible: true
@@ -11,23 +19,10 @@ extractor:
   det_model_checkpoint: src/sign_prep/models/checkpoints/rtmdet_nano_8xb32-100e_coco-obj365-person-05d8511e.pth
 
 normalize:
-  mode: xy_isotropic_z_minmax
-  remove_z: false
-  select_keypoints: true
   keypoint_preset: mmpose_133_to_85
+  mode: xy_isotropic_z_minmax
   mask_empty_frames: true
-  mask_low_confidence: false
-  visibility_threshold: 0.3
-  missing_value: -999.0
 
 processing:
-  max_workers: 4
   target_fps: 24.0
   frame_skip: 2
-  accept_fps_range: [24.0, 60.0]
-  skip_existing: true
-  min_duration: 0.2
-  max_duration: 60.0
-
-webdataset:
-  max_shard_count: 10000

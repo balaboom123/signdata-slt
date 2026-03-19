@@ -10,6 +10,7 @@ Manifest columns added:
 
 import os
 import logging
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import cv2
@@ -17,9 +18,9 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from ..base import BaseProcessor
-from ...registry import register_processor
-from ...utils.manifest import read_manifest, get_timing_columns
+from .base import BaseProcessor
+from ..registry import register_processor
+from ..utils.manifest import read_manifest, get_timing_columns
 
 # Module-level import so tests can patch sign_prep...detect_person.YOLO
 # ultralytics is an optional dependency; import error surfaces only at runtime.
@@ -249,8 +250,22 @@ class DetectPersonProcessor(BaseProcessor):
     def run(self, context):
         cfg = self.config
         loc_cfg = cfg.detect_person
-        manifest_path = cfg.paths.manifest
-        video_dir = cfg.paths.videos
+        manifest_path = str(context.manifest_path)
+        video_dir = str(context.video_dir)
+
+        # ----------------------------------------------------------------
+        # Compute stage manifest path — detect_person writes a derived
+        # manifest rather than mutating the base manifest in-place.
+        # The runner sets stage_output_dir; fall back to computing it
+        # when running outside the runner (e.g. smoke tests).
+        # ----------------------------------------------------------------
+        if context.stage_output_dir:
+            stage_manifest_dir = context.stage_output_dir
+        else:
+            root = Path(cfg.paths.root)
+            stage_manifest_dir = root / "detect_person" / cfg.run_name
+        stage_manifest_dir.mkdir(parents=True, exist_ok=True)
+        stage_manifest_path = str(stage_manifest_dir / "manifest.csv")
 
         # ----------------------------------------------------------------
         # Load manifest
@@ -391,7 +406,7 @@ class DetectPersonProcessor(BaseProcessor):
                 for i, vals in results_map.items():
                     for col, val in vals.items():
                         data.at[i, col] = val
-                data.to_csv(manifest_path, sep="\t", index=False)
+                data.to_csv(stage_manifest_path, sep="\t", index=False)
 
         # ----------------------------------------------------------------
         # Final write — flush any remaining results not caught by checkpoint
@@ -400,11 +415,14 @@ class DetectPersonProcessor(BaseProcessor):
             for col, val in vals.items():
                 data.at[idx, col] = val
 
-        data.to_csv(manifest_path, sep="\t", index=False)
+        data.to_csv(stage_manifest_path, sep="\t", index=False)
         self.logger.info(
-            "Manifest updated: detected=%d  fallback=%d  errors=%d",
-            detected, fallback, errors,
+            "Stage manifest written: %s  detected=%d  fallback=%d  errors=%d",
+            stage_manifest_path, detected, fallback, errors,
         )
+
+        # Update context so downstream stages read the augmented manifest
+        context.manifest_df = data
 
         context.stats["detect_person"] = {
             "total": len(pending),

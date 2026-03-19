@@ -3,7 +3,7 @@
 Handles video/transcript acquisition from YouTube and manifest generation
 from transcript JSON files.
 
-Source config (Phase 2 bridge — reads from config.download / config.manifest):
+Source config (parsed from ``config.source``):
     video_ids_file: str       — path to video ID list
     languages: list[str]      — transcript language codes
     download_format: str      — yt-dlp format selector
@@ -51,9 +51,7 @@ class TextProcessingConfig(BaseModel):
 class YouTubeASLSourceConfig(BaseModel):
     """Typed config for YouTube-ASL adapter.
 
-    In Phase 2 this is built from existing config fields via
-    ``get_source_config()``.  In Phase 3 it will be parsed directly from
-    ``config.source``.
+    Parsed from ``config.source`` via ``get_source_config()``.
     """
     video_ids_file: str = ""
     languages: List[str] = ["en"]
@@ -96,30 +94,18 @@ class YouTubeASLDataset(DatasetAdapter):
 
     @classmethod
     def validate_config(cls, config) -> None:
-        if not config.download.video_ids_file:
-            raise ValueError("youtube_asl requires download.video_ids_file")
+        source = config.source
+        if not source.get("video_ids_file"):
+            raise ValueError(
+                "youtube_asl requires source.video_ids_file to be set"
+            )
 
     def get_source_config(self, config) -> YouTubeASLSourceConfig:
-        """Build typed source config from existing config fields (Phase 2 bridge)."""
-        return YouTubeASLSourceConfig(
-            video_ids_file=config.download.video_ids_file,
-            languages=config.download.languages,
-            download_format=config.download.format,
-            rate_limit=config.download.rate_limit,
-            concurrent_fragments=config.download.concurrent_fragments,
-            max_text_length=config.manifest.max_text_length,
-            min_duration=config.manifest.min_duration,
-            max_duration=config.manifest.max_duration,
-            text_processing=TextProcessingConfig(
-                fix_encoding=config.manifest.fix_encoding,
-                normalize_whitespace=config.manifest.normalize_whitespace,
-                lowercase=config.manifest.lowercase,
-                strip_punctuation=config.manifest.strip_punctuation,
-            ),
-        )
+        """Parse ``config.source`` dict into typed model."""
+        return YouTubeASLSourceConfig(**config.source)
 
     # ------------------------------------------------------------------
-    # acquire — absorbs processors/youtube_asl/download.py
+    # acquire — download videos and transcripts
     # ------------------------------------------------------------------
 
     def acquire(self, config, context):
@@ -143,7 +129,7 @@ class YouTubeASLDataset(DatasetAdapter):
             source.video_ids_file, video_dir, source
         )
 
-        context.stats["download"] = {
+        context.stats["acquire"] = {
             "transcripts": transcript_stats,
             "videos": video_stats,
         }
@@ -266,7 +252,7 @@ class YouTubeASLDataset(DatasetAdapter):
         return {"total": len(all_ids), "downloaded": downloaded, "errors": error_count}
 
     # ------------------------------------------------------------------
-    # build_manifest — absorbs processors/youtube_asl/manifest.py
+    # build_manifest — produce segmented manifest from transcripts
     # ------------------------------------------------------------------
 
     def build_manifest(self, config, context):

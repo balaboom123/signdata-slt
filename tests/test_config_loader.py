@@ -153,34 +153,34 @@ class TestResolvePaths:
         assert Path(cfg.paths.videos).as_posix() == "/abs/videos"
 
     def test_video_ids_file_relative_resolved(self):
-        """download.video_ids_file is resolved relative to project root."""
+        """source.video_ids_file is resolved relative to project root."""
         cfg = Config(
             dataset="test",
-            download={"video_ids_file": "assets/ids.txt"},
+            source={"video_ids_file": "assets/ids.txt"},
         )
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
-        assert cfg.download.video_ids_file == str(project_root / "assets" / "ids.txt")
+        assert cfg.source["video_ids_file"] == str(project_root / "assets" / "ids.txt")
 
     def test_video_ids_file_absolute_unchanged(self):
         cfg = Config(
             dataset="test",
-            download={"video_ids_file": "/abs/ids.txt"},
+            source={"video_ids_file": "/abs/ids.txt"},
         )
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
-        assert Path(cfg.download.video_ids_file).as_posix() == "/abs/ids.txt"
+        assert Path(cfg.source["video_ids_file"]).as_posix() == "/abs/ids.txt"
 
     def test_video_ids_file_empty_unchanged(self):
         cfg = Config(dataset="test")
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
-        assert cfg.download.video_ids_file == ""
+        assert cfg.source.get("video_ids_file", "") == ""
 
-    def test_webdataset_path_includes_mode_and_extractor(self):
+    def test_webdataset_path_includes_recipe_and_extractor(self):
         cfg = Config(
             dataset="test",
-            pipeline={"mode": "pose"},
+            recipe="pose",
             extractor={"name": "mediapipe"},
         )
         project_root = Path("/proj")
@@ -188,7 +188,7 @@ class TestResolvePaths:
 
         expected_root = project_root / "dataset" / "test"
         assert cfg.paths.webdataset == str(
-            expected_root / "webdataset" / "pose" / "mediapipe"
+            expected_root / "webdataset" / "pose" / "mediapipe" / "default"
         )
 
     def test_extractor_model_paths_resolved(self):
@@ -225,13 +225,13 @@ class TestResolvePaths:
         assert Path(cfg.extractor.pose_model_config).as_posix() == "/abs/model.py"
 
     def test_cropped_clips_default_resolved(self):
-        """cropped_clips defaults to <root>/cropped_clips when not set."""
+        """cropped_clips defaults to <root>/cropped_clips/<run_name> when not set."""
         cfg = Config(dataset="test")
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
 
         expected_root = project_root / "dataset" / "test"
-        assert cfg.paths.cropped_clips == str(expected_root / "cropped_clips")
+        assert cfg.paths.cropped_clips == str(expected_root / "cropped_clips" / "default")
 
     def test_cropped_clips_relative_resolved(self):
         """Relative cropped_clips path is resolved against project root."""
@@ -253,75 +253,61 @@ class TestResolvePaths:
         cfg = resolve_paths(cfg, project_root)
         assert Path(cfg.paths.cropped_clips).as_posix() == "/abs/cropped"
 
+    def test_run_name_in_landmarks_path(self):
+        """landmarks default includes run_name."""
+        cfg = Config(dataset="test", run_name="exp1")
+        project_root = Path("/proj")
+        cfg = resolve_paths(cfg, project_root)
+        expected_root = project_root / "dataset" / "test"
+        assert cfg.paths.landmarks == str(
+            expected_root / "landmarks" / "mediapipe" / "exp1"
+        )
+
+    def test_run_name_in_clips_path(self):
+        """clips default includes run_name."""
+        cfg = Config(dataset="test", run_name="exp1")
+        project_root = Path("/proj")
+        cfg = resolve_paths(cfg, project_root)
+        expected_root = project_root / "dataset" / "test"
+        assert cfg.paths.clips == str(expected_root / "clips" / "exp1")
+
 
 # ── load_config ─────────────────────────────────────────────────────────────
 
 class TestLoadConfig:
-    """Load real YAML files from configs/ directory."""
+    """Load real YAML files from configs/jobs/ directory."""
 
     def test_load_youtube_asl_pose_mediapipe(self, project_root):
         # Trigger registrations
         import sign_prep.datasets
         import sign_prep.processors
 
-        yaml_path = str(project_root / "configs" / "youtube_asl" / "pose_mediapipe.yaml")
+        yaml_path = str(project_root / "configs" / "jobs" / "youtube_asl_pose_mediapipe.yaml")
         if not os.path.exists(yaml_path):
             pytest.skip("Config file not found")
 
         cfg = load_config(yaml_path)
         assert cfg.dataset == "youtube_asl"
-        assert cfg.pipeline.mode == "pose"
+        assert cfg.recipe == "pose"
         assert cfg.extractor.name == "mediapipe"
 
     def test_load_how2sign_pose_mediapipe(self, project_root):
         import sign_prep.datasets
         import sign_prep.processors
 
-        yaml_path = str(project_root / "configs" / "how2sign" / "pose_mediapipe.yaml")
+        yaml_path = str(project_root / "configs" / "jobs" / "how2sign_pose_mediapipe.yaml")
         if not os.path.exists(yaml_path):
             pytest.skip("Config file not found")
 
         cfg = load_config(yaml_path)
         assert cfg.dataset == "how2sign"
-        assert cfg.pipeline.mode == "pose"
-
-    def test_base_inheritance_merges(self, project_root):
-        """_base values are merged and overridden by dataset-specific values."""
-        import sign_prep.datasets
-        import sign_prep.processors
-
-        yaml_path = str(project_root / "configs" / "youtube_asl" / "pose_mediapipe.yaml")
-        if not os.path.exists(yaml_path):
-            pytest.skip("Config file not found")
-
-        cfg = load_config(yaml_path)
-        # From _base: extractor.name = mediapipe
-        assert cfg.extractor.name == "mediapipe"
-        # From dataset-specific: pipeline.steps
-        assert cfg.pipeline.steps == [
-            "download", "manifest", "extract", "normalize", "webdataset"
-        ]
-        # From _base: processing defaults
-        assert cfg.processing.max_workers == 4
-
-    def test_how2sign_no_download_steps(self, project_root):
-        """how2sign configs should not include download/manifest steps."""
-        import sign_prep.datasets
-        import sign_prep.processors
-
-        yaml_path = str(project_root / "configs" / "how2sign" / "pose_mediapipe.yaml")
-        if not os.path.exists(yaml_path):
-            pytest.skip("Config file not found")
-
-        cfg = load_config(yaml_path)
-        assert "download" not in cfg.pipeline.steps
-        assert "manifest" not in cfg.pipeline.steps
+        assert cfg.recipe == "pose"
 
     def test_cli_overrides_apply(self, project_root):
         import sign_prep.datasets
         import sign_prep.processors
 
-        yaml_path = str(project_root / "configs" / "youtube_asl" / "pose_mediapipe.yaml")
+        yaml_path = str(project_root / "configs" / "jobs" / "youtube_asl_pose_mediapipe.yaml")
         if not os.path.exists(yaml_path):
             pytest.skip("Config file not found")
 
@@ -331,23 +317,22 @@ class TestLoadConfig:
     def test_missing_dataset_raises(self, tmp_path):
         yaml_path = tmp_path / "bad.yaml"
         yaml_path.write_text(yaml.dump({
-            "pipeline": {"mode": "pose", "steps": ["extract"]},
+            "recipe": "pose",
         }))
         with pytest.raises(ValueError, match="dataset"):
             load_config(str(yaml_path))
 
-    def test_missing_pipeline_steps_raises(self, tmp_path):
-        """Config without pipeline.steps raises ValueError."""
+    def test_missing_recipe_raises(self, tmp_path):
+        """Config without recipe raises ValueError."""
         import sign_prep.datasets
         import sign_prep.processors
 
-        configs_dir = tmp_path / "configs"
-        configs_dir.mkdir()
+        configs_dir = tmp_path / "configs" / "jobs"
+        configs_dir.mkdir(parents=True)
         yaml_path = configs_dir / "test.yaml"
         yaml_path.write_text(yaml.dump({
             "dataset": "youtube_asl",
-            "pipeline": {"mode": "pose"},
-            "download": {"video_ids_file": "assets/ids.txt"},
+            "source": {"video_ids_file": "assets/ids.txt"},
         }))
-        with pytest.raises(ValueError, match="pipeline.steps"):
+        with pytest.raises(ValueError, match="recipe"):
             load_config(str(yaml_path))

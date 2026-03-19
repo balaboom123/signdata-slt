@@ -88,9 +88,9 @@ def run_smoke_test(video_path: str, device: str, padding: float, max_frames: int
     from sign_prep.config.schema import Config
     from sign_prep.pipeline.context import PipelineContext
     from sign_prep.datasets.youtube_asl import YouTubeASLDataset
-    from sign_prep.processors.common.detect_person import DetectPersonProcessor
-    from sign_prep.processors.common.clip_video import ClipVideoProcessor
-    from sign_prep.processors.common.crop_video import CropVideoProcessor
+    from sign_prep.processors.detect_person import DetectPersonProcessor
+    from sign_prep.processors.clip_video import ClipVideoProcessor
+    from sign_prep.processors.crop_video import CropVideoProcessor
 
     video_path = os.path.abspath(video_path)
     if not os.path.exists(video_path):
@@ -137,7 +137,8 @@ def run_smoke_test(video_path: str, device: str, padding: float, max_frames: int
     # ----------------------------------------------------------------
     cfg = Config(
         dataset="youtube_asl",
-        pipeline={"mode": "video", "steps": ["detect_person", "clip_video", "crop_video"]},
+        recipe="video",
+        source={"video_ids_file": "/dev/null"},
         paths={
             "root":          str(workspace),
             "videos":        str(videos_dir),
@@ -146,6 +147,7 @@ def run_smoke_test(video_path: str, device: str, padding: float, max_frames: int
             "cropped_clips": str(cropped_dir),
         },
         detect_person={
+            "enabled":              True,
             "model":                "yolov8n.pt",
             "confidence_threshold": 0.5,
             "max_frames":           max_frames,
@@ -154,6 +156,7 @@ def run_smoke_test(video_path: str, device: str, padding: float, max_frames: int
             "min_bbox_area":        0.02,   # relaxed for smoke test
         },
         crop_video={
+            "enabled": True,
             "padding": padding,
             "codec":   "libx264",
         },
@@ -167,26 +170,35 @@ def run_smoke_test(video_path: str, device: str, padding: float, max_frames: int
         config=cfg,
         dataset=YouTubeASLDataset(),
         project_root=workspace,
+        manifest_path=manifest_path,
+        video_dir=videos_dir,
     )
 
     # ----------------------------------------------------------------
     # Step 1: detect_person
     # ----------------------------------------------------------------
     print("\n[2/4] Running detect_person...")
+    ctx.stage_output_dir = workspace / "detect_person" / cfg.run_name
     processor = DetectPersonProcessor(cfg)
     ctx = processor.run(ctx)
+
+    # Manual context routing (normally the runner does this)
+    stage_manifest = workspace / "detect_person" / cfg.run_name / "manifest.csv"
+    ctx.manifest_path = stage_manifest
+    ctx.manifest_producer = "detect_person"
 
     stats = ctx.stats.get("detect_person", {})
     print(f"  detected={stats.get('detected', 0)}  "
           f"fallback={stats.get('fallback', 0)}  "
           f"errors={stats.get('errors', 0)}")
 
-    # Show bbox results
-    df = pd.read_csv(manifest_path, sep="\t")
+    # Show bbox results from the stage manifest (via ctx.manifest_df)
+    df = ctx.manifest_df
     print("\n  Manifest BBOX columns:")
     for _, row in df.iterrows():
         detected = row.get("PERSON_DETECTED", "N/A")
-        print(f"    {row['SENTENCE_NAME']:20s}  detected={detected}  "
+        sample_id = row.get("SAMPLE_ID", row.get("SENTENCE_NAME", "?"))
+        print(f"    {sample_id:20s}  detected={detected}  "
               f"bbox=({row.get('BBOX_X1', 'N/A'):.0f}, {row.get('BBOX_Y1', 'N/A'):.0f}, "
               f"{row.get('BBOX_X2', 'N/A'):.0f}, {row.get('BBOX_Y2', 'N/A'):.0f})")
 
@@ -196,6 +208,10 @@ def run_smoke_test(video_path: str, device: str, padding: float, max_frames: int
     print("\n[3/4] Running clip_video...")
     clip_processor = ClipVideoProcessor(cfg)
     ctx = clip_processor.run(ctx)
+
+    # Manual context routing
+    ctx.video_dir = clips_dir
+    ctx.video_dir_producer = "clip_video"
 
     clip_stats = ctx.stats.get("clip_video", {})
     print(f"  total={clip_stats.get('total', 0)}  "
@@ -211,6 +227,10 @@ def run_smoke_test(video_path: str, device: str, padding: float, max_frames: int
     print("\n[4/4] Running crop_video...")
     crop_processor = CropVideoProcessor(cfg)
     ctx = crop_processor.run(ctx)
+
+    # Manual context routing
+    ctx.video_dir = cropped_dir
+    ctx.video_dir_producer = "crop_video"
 
     crop_stats = ctx.stats.get("crop_video", {})
     print(f"  total={crop_stats.get('total', 0)}  "

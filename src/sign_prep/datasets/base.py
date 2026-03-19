@@ -62,11 +62,8 @@ class DatasetAdapter(ABC):
     def get_source_config(self, config: "Config") -> BaseModel:
         """Parse adapter-specific config into a typed Pydantic model.
 
-        In Phase 2 this reads from existing config fields (config.download,
-        config.manifest, etc.).  In Phase 3 this will read from
-        config.source dict.
-
-        Override in subclasses to return a typed SourceConfig model.
+        Reads from ``config.source`` dict and returns a typed SourceConfig.
+        Override in subclasses to return a dataset-specific model.
         """
         return BaseModel()
 

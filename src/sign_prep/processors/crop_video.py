@@ -17,9 +17,9 @@ import cv2
 import pandas as pd
 from tqdm import tqdm
 
-from ..base import BaseProcessor
-from ...registry import register_processor
-from ...utils.manifest import read_manifest
+from .base import BaseProcessor
+from ..registry import register_processor
+from ..utils.manifest import read_manifest
 
 
 # ---------------------------------------------------------------------------
@@ -150,8 +150,8 @@ class CropVideoProcessor(BaseProcessor):
     def run(self, context):
         cfg = self.config
         crop_cfg = cfg.crop_video
-        manifest_path = cfg.paths.manifest
-        clips_dir = cfg.paths.clips
+        manifest_path = str(context.manifest_path)
+        clips_dir = str(context.video_dir)
         cropped_dir = cfg.paths.cropped_clips
 
         if not cropped_dir:

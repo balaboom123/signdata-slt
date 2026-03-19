@@ -6,24 +6,63 @@ from sign_prep.cli import parse_args
 
 
 class TestParseArgs:
-    def test_config_only(self):
-        args = parse_args(["config.yaml"])
+    def test_run_config_only(self):
+        args = parse_args(["run", "config.yaml"])
+        assert args.command == "run"
         assert args.config == "config.yaml"
         assert args.override == []
 
-    def test_config_with_overrides(self):
-        args = parse_args(["config.yaml", "--override", "a=1", "b=2"])
+    def test_run_with_overrides(self):
+        args = parse_args(["run", "config.yaml", "--override", "a=1", "b=2"])
         assert args.config == "config.yaml"
         assert args.override == ["a=1", "b=2"]
 
-    def test_missing_config_raises(self):
-        with pytest.raises(SystemExit):
-            parse_args([])
+    def test_missing_subcommand(self):
+        args = parse_args([])
+        assert args.command is None
 
-    def test_override_empty_list(self):
-        args = parse_args(["my.yaml", "--override"])
+    def test_run_override_empty_list(self):
+        args = parse_args(["run", "my.yaml", "--override"])
         assert args.override == []
 
-    def test_config_path_preserved(self):
-        args = parse_args(["/path/to/configs/test.yaml"])
+    def test_run_config_path_preserved(self):
+        args = parse_args(["run", "/path/to/configs/test.yaml"])
         assert args.config == "/path/to/configs/test.yaml"
+
+    def test_run_from_flag(self):
+        args = parse_args(["run", "job.yaml", "--from", "extract"])
+        assert args.start_from == "extract"
+
+    def test_run_to_flag(self):
+        args = parse_args(["run", "job.yaml", "--to", "normalize"])
+        assert args.stop_at == "normalize"
+
+    def test_run_only_flag(self):
+        args = parse_args(["run", "job.yaml", "--only", "extract"])
+        assert args.only == "extract"
+
+    def test_run_name_flag(self):
+        args = parse_args(["run", "job.yaml", "--run-name", "exp1"])
+        assert args.run_name == "exp1"
+
+    def test_list_presets_flag(self):
+        args = parse_args(["run", "job.yaml", "--list-presets"])
+        assert args.list_presets is True
+
+    def test_force_all_flag(self):
+        args = parse_args(["run", "job.yaml", "--force-all"])
+        assert args.force_all is True
+
+    def test_run_missing_config_is_none(self):
+        """config is optional (for --list-presets); None when omitted."""
+        args = parse_args(["run"])
+        assert args.config is None
+
+    def test_list_presets_without_config(self):
+        args = parse_args(["run", "--list-presets"])
+        assert args.list_presets is True
+        assert args.config is None
+
+    def test_force_flag(self):
+        args = parse_args(["run", "job.yaml", "--force", "extract"])
+        assert args.force == "extract"

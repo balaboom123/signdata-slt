@@ -1,4 +1,4 @@
-"""YAML config loading with _base inheritance."""
+"""YAML config loading."""
 
 import copy
 import os
@@ -45,6 +45,7 @@ def resolve_paths(config: Config, project_root: Path) -> Config:
         paths.root = str(root)
 
     extractor_name = config.extractor.name
+    run_name = config.run_name
 
     if not paths.videos:
         paths.videos = str(root / "videos")
@@ -62,36 +63,37 @@ def resolve_paths(config: Config, project_root: Path) -> Config:
         paths.manifest = str(project_root / paths.manifest)
 
     if not paths.landmarks:
-        paths.landmarks = str(root / "landmarks" / extractor_name)
+        paths.landmarks = str(root / "landmarks" / extractor_name / run_name)
     elif not _is_absolute(paths.landmarks):
         paths.landmarks = str(project_root / paths.landmarks)
 
     if not paths.normalized:
-        paths.normalized = str(root / "normalized" / extractor_name)
+        paths.normalized = str(root / "normalized" / extractor_name / run_name)
     elif not _is_absolute(paths.normalized):
         paths.normalized = str(project_root / paths.normalized)
 
     if not paths.clips:
-        paths.clips = str(root / "clips")
+        paths.clips = str(root / "clips" / run_name)
     elif not _is_absolute(paths.clips):
         paths.clips = str(project_root / paths.clips)
 
     if not paths.cropped_clips:
-        paths.cropped_clips = str(root / "cropped_clips")
+        paths.cropped_clips = str(root / "cropped_clips" / run_name)
     elif not _is_absolute(paths.cropped_clips):
         paths.cropped_clips = str(project_root / paths.cropped_clips)
 
     if not paths.webdataset:
         paths.webdataset = str(
-            root / "webdataset" / config.pipeline.mode / extractor_name
+            root / "webdataset" / config.recipe / extractor_name / run_name
         )
     elif not _is_absolute(paths.webdataset):
         paths.webdataset = str(project_root / paths.webdataset)
 
-    # Resolve download.video_ids_file relative to project root
-    vid_file = config.download.video_ids_file
+    # Resolve source.video_ids_file relative to project root
+    source = config.source
+    vid_file = source.get("video_ids_file", "")
     if vid_file and not _is_absolute(vid_file):
-        config.download.video_ids_file = str(project_root / vid_file)
+        config.source["video_ids_file"] = str(project_root / vid_file)
 
     # Resolve extractor model paths relative to project root
     for attr in ("pose_model_config", "pose_model_checkpoint",
@@ -107,41 +109,34 @@ def load_config(
     yaml_path: str,
     overrides: Optional[List[str]] = None,
 ) -> Config:
-    """Load config from YAML file with _base inheritance.
+    """Load config from YAML file.
 
     Merge order (later overrides earlier):
     1. Pydantic defaults (hardcoded in schema)
-    2. _base YAML (if specified via _base key)
-    3. Dataset-specific YAML config file
-    4. CLI overrides (key=value pairs)
+    2. YAML config file
+    3. CLI overrides (key=value pairs)
     """
     yaml_path = os.path.abspath(yaml_path)
-    project_root = Path(yaml_path).parent.parent
+    config_dir = Path(yaml_path).parent
+
+    # Compute project root: strip configs/ or configs/jobs/ parent
+    project_root = config_dir
+    if project_root.name == "jobs":
+        project_root = project_root.parent
     if project_root.name == "configs":
         project_root = project_root.parent
 
     with open(yaml_path, "r") as f:
         raw = yaml.safe_load(f) or {}
 
-    # Handle _base inheritance
-    if "_base" in raw:
-        base_rel = raw.pop("_base")
-        configs_dir = Path(yaml_path).parent.parent  # e.g. configs/youtube_asl/ -> configs/
-        base_path = configs_dir / base_rel
-        with open(base_path) as f:
-            base_raw = yaml.safe_load(f) or {}
-        raw = deep_merge(base_raw, raw)
-
     dataset_name = raw.get("dataset")
     if not dataset_name:
         raise ValueError("Config must specify 'dataset' field")
 
-    # Validate pipeline.steps is present
-    pipeline_cfg = raw.get("pipeline", {})
-    if not pipeline_cfg.get("steps"):
+    # Validate recipe is present
+    if "recipe" not in raw:
         raise ValueError(
-            "Config must specify 'pipeline.steps'. "
-            "Steps are no longer inferred from dataset classes."
+            "Config must specify 'recipe' field (either 'pose' or 'video')."
         )
 
     if dataset_name not in DATASET_REGISTRY:

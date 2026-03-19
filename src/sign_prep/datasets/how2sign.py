@@ -4,7 +4,7 @@ How2Sign requires pre-downloaded data and provides official re-aligned
 CSV manifests.  The adapter validates that required files exist and
 loads the existing manifest.
 
-Source config (Phase 2 bridge — reads from config.paths):
+Source config (parsed from ``config.source``):
     manifest_csv: str — path to existing re-aligned CSV
     split: str        — which split this CSV represents (train/val/test/all)
 """
@@ -29,9 +29,7 @@ logger = logging.getLogger(__name__)
 class How2SignSourceConfig(BaseModel):
     """Typed config for How2Sign adapter.
 
-    In Phase 2 this is built from existing config fields via
-    ``get_source_config()``.  In Phase 3 it will be parsed directly from
-    ``config.source``.
+    Parsed from ``config.source`` via ``get_source_config()``.
     """
     manifest_csv: str = ""
     split: str = "all"
@@ -47,19 +45,17 @@ class How2SignDataset(DatasetAdapter):
 
     @classmethod
     def validate_config(cls, config) -> None:
-        steps = config.pipeline.steps
-        if "download" in steps:
-            raise ValueError(
-                "how2sign does not support the 'download' step. "
-                "How2Sign requires pre-downloaded data. "
-                "See https://how2sign.github.io/"
-            )
+        # How2Sign doesn't support download — the recipe handles stage
+        # ordering, so no need to check for a "download" step.
+        pass
 
     def get_source_config(self, config) -> How2SignSourceConfig:
-        """Build typed source config from existing config fields (Phase 2 bridge)."""
-        return How2SignSourceConfig(
-            manifest_csv=config.paths.manifest,
-        )
+        """Parse ``config.source`` dict into typed model."""
+        # Also accept manifest_csv from paths.manifest as fallback
+        source_dict = dict(config.source)
+        if not source_dict.get("manifest_csv") and config.paths.manifest:
+            source_dict["manifest_csv"] = config.paths.manifest
+        return How2SignSourceConfig(**source_dict)
 
     def acquire(self, config, context):
         """Validate that How2Sign video directory exists.
@@ -90,9 +86,7 @@ class How2SignDataset(DatasetAdapter):
         """Load the existing How2Sign manifest CSV.
 
         How2Sign provides official re-aligned CSV files; this adapter
-        reads one and sets it on the pipeline context.  No column
-        renaming is done in Phase 2 (downstream processors still expect
-        legacy names like VIDEO_NAME, SENTENCE_NAME, etc.).
+        reads one and normalizes columns to canonical names.
         """
         source = self.get_source_config(config)
         manifest_path = source.manifest_csv or config.paths.manifest

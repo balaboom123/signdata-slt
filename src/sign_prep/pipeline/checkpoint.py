@@ -39,24 +39,10 @@ SUCCESS_FILENAME = "_SUCCESS.json"
 
 STAGE_HASH_FIELDS: Dict[str, List[str]] = {
     "acquire": [
-        "download.video_ids_file",
-        "download.languages",
-        "download.format",
-        "download.rate_limit",
-        "download.concurrent_fragments",
-        "paths.videos",
-        "paths.transcripts",
+        "source",
     ],
     "manifest": [
-        "manifest.max_text_length",
-        "manifest.min_duration",
-        "manifest.max_duration",
-        "manifest.fix_encoding",
-        "manifest.normalize_whitespace",
-        "manifest.lowercase",
-        "manifest.strip_punctuation",
-        "paths.transcripts",
-        "paths.manifest",
+        "source",
     ],
     "detect_person": [
         "detect_person.model",
@@ -68,6 +54,7 @@ STAGE_HASH_FIELDS: Dict[str, List[str]] = {
         "detect_person.device",
         "detect_person.min_bbox_area",
         "processing.frame_skip",
+        "processing.signer_policy",
     ],
     "clip_video": [
         "clip_video.codec",
@@ -102,6 +89,7 @@ STAGE_HASH_FIELDS: Dict[str, List[str]] = {
         "processing.accept_fps_range",
         "processing.min_duration",
         "processing.max_duration",
+        "processing.signer_policy",
     ],
     "normalize": [
         "normalize.mode",
@@ -117,7 +105,7 @@ STAGE_HASH_FIELDS: Dict[str, List[str]] = {
     "webdataset": [
         "webdataset.max_shard_count",
         "webdataset.max_shard_size",
-        "pipeline.mode",
+        "recipe",
     ],
 }
 

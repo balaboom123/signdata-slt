@@ -61,13 +61,12 @@ class TestRealRegistrations:
         import sign_prep.processors  # noqa: F401
 
         expected = [
-            "download", "manifest", "extract",
-            "normalize", "clip_video", "webdataset",
-            "detect_person", "crop_video",
+            "extract", "normalize", "clip_video",
+            "webdataset", "detect_person", "crop_video",
         ]
         for name in expected:
             assert name in PROCESSOR_REGISTRY, f"Processor '{name}' not registered"
-        assert len(PROCESSOR_REGISTRY) >= 8
+        assert len(PROCESSOR_REGISTRY) >= 6
 
     def test_extractors_registered(self):
         import sign_prep.extractors  # noqa: F401

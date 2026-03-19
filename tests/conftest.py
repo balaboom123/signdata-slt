@@ -25,8 +25,9 @@ def sample_config():
 
     return Config(
         dataset="youtube_asl",
-        pipeline={"mode": "pose", "steps": ["download", "manifest"]},
+        recipe="pose",
         paths={"root": "/tmp/test_dataset"},
+        source={"video_ids_file": "assets/ids.txt"},
     )
 
 
@@ -34,18 +35,18 @@ def sample_config():
 def sample_yaml_file(tmp_path):
     """Write a minimal YAML config to tmp and return its path.
 
-    The file is placed inside a ``configs/`` subdirectory so that
+    The file is placed inside a ``configs/jobs/`` subdirectory so that
     ``load_config`` can compute *project_root* correctly (it strips a
-    ``configs`` parent when present).
+    ``configs/jobs`` parent when present).
     """
-    configs_dir = tmp_path / "configs"
-    configs_dir.mkdir()
+    configs_dir = tmp_path / "configs" / "jobs"
+    configs_dir.mkdir(parents=True)
     yaml_path = configs_dir / "test_config.yaml"
     data = {
         "dataset": "youtube_asl",
-        "pipeline": {"mode": "pose", "steps": ["download", "manifest", "extract", "normalize", "webdataset"]},
+        "recipe": "pose",
         "extractor": {"name": "mediapipe"},
-        "download": {"video_ids_file": "assets/ids.txt"},
+        "source": {"video_ids_file": "assets/ids.txt"},
     }
     yaml_path.write_text(yaml.dump(data))
     return yaml_path

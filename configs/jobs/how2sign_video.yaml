@@ -1,0 +1,22 @@
+dataset: how2sign
+recipe: video
+run_name: default
+
+paths:
+  root: dataset/how2sign
+  videos: dataset/how2sign/videos
+  manifest: dataset/how2sign/how2sign_realigned_val.csv
+
+detect_person:
+  enabled: true
+  model: "yolov8n.pt"
+  confidence_threshold: 0.5
+  device: "cpu"
+
+crop_video:
+  enabled: true
+  padding: 0.25
+
+processing:
+  target_fps: 24.0
+  frame_skip: 2

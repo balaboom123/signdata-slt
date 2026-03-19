@@ -6,12 +6,11 @@ from pydantic import ValidationError
 from sign_prep.config.schema import (
     ClipVideoConfig,
     Config,
-    DownloadConfig,
+    CropVideoConfig,
+    DetectPersonConfig,
     ExtractorConfig,
-    ManifestConfig,
     NormalizeConfig,
     PathsConfig,
-    PipelineConfig,
     ProcessingConfig,
     WebDatasetConfig,
 )
@@ -30,39 +29,38 @@ class TestConfigMinimal:
 
     def test_all_sub_configs_have_defaults(self):
         cfg = Config(dataset="test")
-        assert isinstance(cfg.pipeline, PipelineConfig)
+        assert cfg.recipe == "pose"
+        assert cfg.run_name == "default"
+        assert cfg.source == {}
+        assert cfg.stage_config == {}
         assert isinstance(cfg.extractor, ExtractorConfig)
         assert isinstance(cfg.paths, PathsConfig)
-        assert isinstance(cfg.download, DownloadConfig)
-        assert isinstance(cfg.manifest, ManifestConfig)
         assert isinstance(cfg.normalize, NormalizeConfig)
         assert isinstance(cfg.processing, ProcessingConfig)
         assert isinstance(cfg.webdataset, WebDatasetConfig)
         assert isinstance(cfg.clip_video, ClipVideoConfig)
+        assert isinstance(cfg.detect_person, DetectPersonConfig)
+        assert isinstance(cfg.crop_video, CropVideoConfig)
+
+
+class TestRecipeValidation:
+    """Config.recipe rejects invalid literals."""
+
+    def test_valid_pose(self):
+        cfg = Config(dataset="test", recipe="pose")
+        assert cfg.recipe == "pose"
+
+    def test_valid_video(self):
+        cfg = Config(dataset="test", recipe="video")
+        assert cfg.recipe == "video"
+
+    def test_invalid_recipe(self):
+        with pytest.raises(ValidationError):
+            Config(dataset="test", recipe="audio")
 
 
 class TestSubConfigDefaults:
     """Each sub-config default values match expected."""
-
-    def test_pipeline_defaults(self):
-        p = PipelineConfig()
-        assert p.mode == "pose"
-        assert p.steps == []
-        assert p.start_from is None
-        assert p.stop_at is None
-
-    def test_download_defaults(self):
-        d = DownloadConfig()
-        assert d.video_ids_file == ""
-        assert d.languages == ["en"]
-        assert d.rate_limit == "5M"
-        assert d.concurrent_fragments == 5
-
-    def test_manifest_defaults(self):
-        m = ManifestConfig()
-        assert m.max_text_length == 300
-        assert m.min_duration == 0.2
-        assert m.max_duration == 60.0
 
     def test_extractor_defaults(self):
         e = ExtractorConfig()
@@ -85,6 +83,7 @@ class TestSubConfigDefaults:
         assert p.target_fps == 24.0
         assert p.frame_skip == 2
         assert p.skip_existing is True
+        assert p.signer_policy == "primary_signer"
 
     def test_paths_defaults(self):
         p = PathsConfig()
@@ -102,21 +101,17 @@ class TestSubConfigDefaults:
         assert c.codec == "copy"
         assert c.resize is None
 
+    def test_detect_person_defaults(self):
+        d = DetectPersonConfig()
+        assert d.enabled is False
+        assert d.model == "yolov8n.pt"
+        assert d.confidence_threshold == 0.5
 
-class TestPipelineModeValidation:
-    """PipelineConfig.mode rejects invalid literals."""
-
-    def test_valid_pose(self):
-        p = PipelineConfig(mode="pose")
-        assert p.mode == "pose"
-
-    def test_valid_video(self):
-        p = PipelineConfig(mode="video")
-        assert p.mode == "video"
-
-    def test_invalid_mode(self):
-        with pytest.raises(ValidationError):
-            PipelineConfig(mode="audio")
+    def test_crop_video_defaults(self):
+        c = CropVideoConfig()
+        assert c.enabled is False
+        assert c.padding == 0.25
+        assert c.codec == "libx264"
 
 
 class TestNormalizeOptionalFields:
@@ -151,19 +146,19 @@ class TestTypeCoercion:
     """Test type coercion through Pydantic."""
 
     def test_int_field(self):
-        m = ManifestConfig(max_text_length=500)
-        assert m.max_text_length == 500
-        assert isinstance(m.max_text_length, int)
+        p = ProcessingConfig(max_workers=8)
+        assert p.max_workers == 8
+        assert isinstance(p.max_workers, int)
 
     def test_float_field(self):
-        m = ManifestConfig(min_duration=1.5)
-        assert m.min_duration == 1.5
-        assert isinstance(m.min_duration, float)
+        p = ProcessingConfig(min_duration=1.5)
+        assert p.min_duration == 1.5
+        assert isinstance(p.min_duration, float)
 
     def test_bool_field(self):
         n = NormalizeConfig(select_keypoints=False)
         assert n.select_keypoints is False
 
     def test_list_field(self):
-        d = DownloadConfig(languages=["fr", "de"])
-        assert d.languages == ["fr", "de"]
+        e = ExtractorConfig(name="mediapipe")
+        assert e.name == "mediapipe"

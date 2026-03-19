@@ -48,7 +48,7 @@ class TestYouTubeASLValidateConfig:
     def test_valid_config_passes(self):
         cfg = Config(
             dataset="youtube_asl",
-            download={"video_ids_file": "assets/ids.txt"},
+            source={"video_ids_file": "assets/ids.txt"},
         )
         # Should not raise
         YouTubeASLDataset.validate_config(cfg)
@@ -56,12 +56,12 @@ class TestYouTubeASLValidateConfig:
     def test_missing_video_ids_file_raises(self):
         cfg = Config(
             dataset="youtube_asl",
-            download={"video_ids_file": ""},
+            source={"video_ids_file": ""},
         )
         with pytest.raises(ValueError, match="video_ids_file"):
             YouTubeASLDataset.validate_config(cfg)
 
-    def test_default_download_raises(self):
+    def test_default_source_raises(self):
         cfg = Config(dataset="youtube_asl")
         with pytest.raises(ValueError, match="video_ids_file"):
             YouTubeASLDataset.validate_config(cfg)
@@ -70,16 +70,14 @@ class TestYouTubeASLValidateConfig:
 # ── YouTube-ASL get_source_config ───────────────────────────────────────────
 
 class TestYouTubeASLSourceConfig:
-    def test_source_config_from_existing_config(self):
-        """get_source_config bridges existing config fields into typed model."""
+    def test_source_config_from_source_dict(self):
+        """get_source_config parses config.source into typed model."""
         cfg = Config(
             dataset="youtube_asl",
-            download={
+            source={
                 "video_ids_file": "assets/ids.txt",
                 "languages": ["en", "ase"],
                 "rate_limit": "10M",
-            },
-            manifest={
                 "max_text_length": 500,
                 "min_duration": 0.5,
             },
@@ -105,11 +103,16 @@ class TestYouTubeASLSourceConfig:
         assert source.text_processing.fix_encoding is True
         assert source.text_processing.lowercase is False
 
-    def test_source_config_bridges_text_processing(self):
-        """Text processing fields from ManifestConfig flow into source config."""
+    def test_source_config_text_processing(self):
+        """Text processing fields flow into source config."""
         cfg = Config(
             dataset="youtube_asl",
-            manifest={"lowercase": True, "strip_punctuation": True},
+            source={
+                "text_processing": {
+                    "lowercase": True,
+                    "strip_punctuation": True,
+                },
+            },
         )
         adapter = YouTubeASLDataset()
         source = adapter.get_source_config(cfg)
@@ -207,7 +210,7 @@ class TestYouTubeASLBuildManifest:
         assert context.manifest_df.iloc[0]["TEXT"] == "OK"
 
     def test_build_manifest_text_processing_wired(self, tmp_path):
-        """manifest.lowercase=True flows through to build_manifest output."""
+        """source.text_processing.lowercase=True flows through to output."""
         transcript_dir = tmp_path / "transcripts"
         transcript_dir.mkdir()
 
@@ -223,7 +226,12 @@ class TestYouTubeASLBuildManifest:
                 "transcripts": str(transcript_dir),
                 "manifest": str(manifest_path),
             },
-            manifest={"lowercase": True, "strip_punctuation": True},
+            source={
+                "text_processing": {
+                    "lowercase": True,
+                    "strip_punctuation": True,
+                },
+            },
         )
         context = self._make_context(cfg)
         context = YouTubeASLDataset().build_manifest(cfg, context)
@@ -237,24 +245,16 @@ class TestHow2SignValidateConfig:
     def test_valid_config_passes(self):
         cfg = Config(
             dataset="how2sign",
-            pipeline={"mode": "pose", "steps": ["extract", "normalize", "webdataset"]},
+            recipe="pose",
         )
-        # Should not raise
+        # Should not raise — validate_config is a no-op
         How2SignDataset.validate_config(cfg)
 
-    def test_download_step_raises(self):
+    def test_any_recipe_accepted(self):
+        """validate_config is a no-op — recipe handles stage ordering."""
         cfg = Config(
             dataset="how2sign",
-            pipeline={"mode": "pose", "steps": ["download", "extract"]},
-        )
-        with pytest.raises(ValueError, match="download"):
-            How2SignDataset.validate_config(cfg)
-
-    def test_manifest_step_allowed(self):
-        """manifest step is now allowed — adapter's build_manifest loads the CSV."""
-        cfg = Config(
-            dataset="how2sign",
-            pipeline={"mode": "pose", "steps": ["manifest", "extract"]},
+            recipe="video",
         )
         # Should not raise
         How2SignDataset.validate_config(cfg)
@@ -274,6 +274,17 @@ class TestHow2SignSourceConfig:
         assert isinstance(source, How2SignSourceConfig)
         assert source.manifest_csv == "/data/how2sign/manifest.csv"
         assert source.split == "all"
+
+    def test_source_config_from_source_dict(self):
+        cfg = Config(
+            dataset="how2sign",
+            source={"manifest_csv": "/data/manifest.csv", "split": "val"},
+        )
+        adapter = How2SignDataset()
+        source = adapter.get_source_config(cfg)
+
+        assert source.manifest_csv == "/data/manifest.csv"
+        assert source.split == "val"
 
 
 # ── How2Sign acquire ────────────────────────────────────────────────────────
