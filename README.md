@@ -2,7 +2,7 @@
 # SLTpipe: Data Pipeline for Sign Language Translation
 
 <!-- Animated Header -->
-<img src="https://balaboom123-capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=SLTpipe&fontSize=42&fontColor=fff&animation=twinkling&fontAlignY=32&desc=Data%20Pipeline%20for%20Sign%20Language%20Translation&descAlignY=52&descSize=18"/>
+<img src="https://balaboom123-capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=SLTpipe&fontSize=42&fontColor=fff&animation=twinkling&fontAlignY=32&desc=Data%20Pipeline%20for%20Sign%20Language%20Translation&descAlignY=52&descSize=18" alt="SLTpipe – Data Pipeline for Sign Language Translation"/>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-10B981?style=flat" alt="License"/></a>
@@ -12,7 +12,7 @@
 </p>
 
 A config-driven, modular pipeline for preprocessing multiple **Sign Language (SL)** datasets.
-Supports two landmark extractors (**MediaPipe Holistic** and **MMPose**) and two output modes (pose landmarks and video clips).
+Supports two landmark extractors (**MediaPipe Holistic** and **MMPose RTMPose3D**) and two output modes (pose landmarks and video clips).
 
 <!-- Quick Links -->
 <div align="center">
