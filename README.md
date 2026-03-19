@@ -1,5 +1,8 @@
+<!-- H1 -->
+# SLTpipe: Data Pipeline for Sign Language Translation 
+
 <!-- Animated Header -->
-<img src="https://balaboom123-capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=Sign%20Language%20Preprocessing&fontSize=42&fontColor=fff&anmatioin=twinkling&fontAlignY=32&desc=Config-Driven%20ASL%20Dataset%20Preprocessing%20Pipeline&descAlignY=52&descSize=18"/>
+<img src="https://balaboom123-capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=Sign%20Language%20Preprocessing&fontSize=42&fontColor=fff&anmatioin=twinkling&fontAlignY=32&desc=Config-Driven%20Video%20and%20Pose%20Preprocessing&descAlignY=52&descSize=18"/>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-10B981?style=flat" alt="License"/></a>
@@ -8,8 +11,8 @@
   <a href="https://github.com/balaboom123/Sign-Language-Preprocessing/issues"><img src="https://img.shields.io/github/issues/balaboom123/Sign-Language-Preprocessing?style=flat&color=EF4444" alt="Issues"/></a>
 </p>
 
-A config-driven, modular pipeline for preprocessing **American Sign Language (ASL)** datasets.
-Supports **YouTube-ASL** and **How2Sign** with two landmark extractors (**MediaPipe Holistic** and **MMPose RTMPose3D**) and two output modes (pose landmarks and video clips).
+A config-driven, modular pipeline for preprocessing multiple **Sign Language (SL)** datasets.
+Supports two landmark extractors (**MediaPipe Holistic** and **MMPose**) and two output modes (pose landmarks and video clips).
 
 <!-- Quick Links -->
 <div align="center">
