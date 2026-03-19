@@ -1,5 +1,5 @@
 <!-- H1 -->
-# SLTpipe: Data Pipeline for Sign Language Translation 
+# SLTpipe: Data Pipeline for Sign Language Translation
 
 <!-- Animated Header -->
 <img src="https://balaboom123-capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=Sign%20Language%20Preprocessing&fontSize=42&fontColor=fff&animation=twinkling&fontAlignY=32&desc=Config-Driven%20Video%20and%20Pose%20Preprocessing&descAlignY=52&descSize=18"/>
