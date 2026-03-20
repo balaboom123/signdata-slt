@@ -2,7 +2,7 @@
 
 import pytest
 
-from sign_prep.cli import parse_args
+from signdata.cli import parse_args
 
 
 class TestParseArgs:

@@ -1,4 +1,4 @@
-"""Sign Language Preprocessing Pipeline.
+"""Signdata.
 
 A dataset-driven pipeline for downloading, processing, and extracting
 landmarks from sign language video datasets.

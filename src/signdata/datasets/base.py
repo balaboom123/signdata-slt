@@ -1,6 +1,6 @@
 """Base dataset adapter class.
 
-Dataset adapters bridge external data sources into the sign-prep pipeline.
+Dataset adapters bridge external data sources into the signdata pipeline.
 Each adapter is responsible for:
 - Acquiring raw data (download, copy, or validate existence)
 - Building a manifest from raw data in the canonical format
@@ -30,7 +30,7 @@ class DatasetAdapter(ABC):
     name: str
 
     def __init__(self) -> None:
-        self.logger = logging.getLogger(f"sign_prep.dataset.{self.name}")
+        self.logger = logging.getLogger(f"signdata.dataset.{self.name}")
 
     @classmethod
     def validate_config(cls, config: "Config") -> None:

@@ -3,7 +3,7 @@
 ## Project Structure
 
 ```
-Sign-Language-Preprocessing/
+signdata/
 ├── configs/
 │   ├── _base/                  # Shared base configs
 │   │   ├── pose_mediapipe.yaml
@@ -11,7 +11,7 @@ Sign-Language-Preprocessing/
 │   │   └── video.yaml
 │   ├── youtube_asl/            # YouTube-ASL dataset configs
 │   └── how2sign/               # How2Sign dataset configs
-├── src/sign_prep/
+├── src/signdata/
 │   ├── __main__.py             # CLI entry point
 │   ├── cli.py                  # Argument parsing
 │   ├── registry.py             # Component registry
@@ -32,11 +32,11 @@ Sign-Language-Preprocessing/
 
 ## Adding a New Dataset
 
-1. Create a class in `src/sign_prep/datasets/` decorated with `@register_dataset`:
+1. Create a class in `src/signdata/datasets/` decorated with `@register_dataset`:
 
 ```python
-from sign_prep.datasets.base import BaseDataset
-from sign_prep.registry import register_dataset
+from signdata.datasets.base import BaseDataset
+from signdata.registry import register_dataset
 
 @register_dataset("my_dataset")
 class MyDataset(BaseDataset):
@@ -48,7 +48,7 @@ class MyDataset(BaseDataset):
         pass
 ```
 
-2. Import it in `src/sign_prep/datasets/__init__.py` so the decorator runs at startup.
+2. Import it in `src/signdata/datasets/__init__.py` so the decorator runs at startup.
 
 3. Create a config directory and YAML under `configs/my_dataset/`. See [configuration reference](docs/configuration.md#minimal-working-config) for the minimal required fields.
 
@@ -58,11 +58,11 @@ class MyDataset(BaseDataset):
 
 ## Adding a New Processor
 
-1. Create a class in `src/sign_prep/processors/` decorated with `@register_processor`:
+1. Create a class in `src/signdata/processors/` decorated with `@register_processor`:
 
 ```python
-from sign_prep.processors.base import BaseProcessor
-from sign_prep.registry import register_processor
+from signdata.processors.base import BaseProcessor
+from signdata.registry import register_processor
 
 @register_processor("my_step")
 class MyProcessor(BaseProcessor):
@@ -85,11 +85,11 @@ class MyProcessor(BaseProcessor):
 
 ## Adding a New Extractor
 
-1. Create a class in `src/sign_prep/extractors/` decorated with `@register_extractor`:
+1. Create a class in `src/signdata/extractors/` decorated with `@register_extractor`:
 
 ```python
-from sign_prep.extractors.base import LandmarkExtractor
-from sign_prep.registry import register_extractor
+from signdata.extractors.base import LandmarkExtractor
+from signdata.registry import register_extractor
 
 @register_extractor("my_extractor")
 class MyExtractor(LandmarkExtractor):
@@ -102,7 +102,7 @@ class MyExtractor(LandmarkExtractor):
         ...
 ```
 
-2. Import it in `src/sign_prep/extractors/__init__.py`.
+2. Import it in `src/signdata/extractors/__init__.py`.
 
 3. Set `extractor.name: my_extractor` in your config YAML.
 

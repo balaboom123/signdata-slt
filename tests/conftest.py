@@ -1,4 +1,4 @@
-"""Shared fixtures for sign_prep test suite."""
+"""Shared fixtures for signdata test suite."""
 
 import sys
 from pathlib import Path
@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import yaml
 
-# Ensure src/ is on the path so sign_prep can be imported
+# Ensure src/ is on the path so signdata can be imported
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -21,7 +21,7 @@ def project_root():
 @pytest.fixture
 def sample_config():
     """Return a minimal valid Config object."""
-    from sign_prep.config.schema import Config
+    from signdata.config.schema import Config
 
     return Config(
         dataset="youtube_asl",

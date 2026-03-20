@@ -22,7 +22,7 @@ class BaseProcessor(ABC):
 
     def __init__(self, config: Config):
         self.config = config
-        self.logger = logging.getLogger(f"sign_prep.{self.name}")
+        self.logger = logging.getLogger(f"signdata.{self.name}")
 
     @abstractmethod
     def run(self, context: "PipelineContext") -> "PipelineContext":

@@ -43,7 +43,7 @@ def _build_processing_tasks(
         duration filtering is skipped.
     """
     import logging
-    logger = logging.getLogger("sign_prep.extract")
+    logger = logging.getLogger("signdata.extract")
 
     existing_set = set(existing_files or [])
     video_validation_cache: Dict[str, bool] = {}
@@ -179,7 +179,7 @@ def _process_segment_mediapipe(args):
     """Process a single video segment with MediaPipe using batch processing."""
     video_path, start_time, end_time, output_file, config_dict = args
     import logging
-    logger = logging.getLogger("sign_prep.extract")
+    logger = logging.getLogger("signdata.extract")
 
     from ..config.schema import ExtractorConfig
     from ..extractors.mediapipe import MediaPipeExtractor
@@ -239,7 +239,7 @@ def _process_segment_mmpose(args):
     """Process a single video segment with MMPose using batch processing."""
     video_path, start_time, end_time, output_file, config_dict = args
     import logging
-    logger = logging.getLogger("sign_prep.extract")
+    logger = logging.getLogger("signdata.extract")
 
     global _detector, _pose_estimator
 

@@ -9,12 +9,12 @@ import os
 import pandas as pd
 import pytest
 
-from sign_prep.config.schema import Config
-from sign_prep.datasets.youtube_asl import YouTubeASLDataset, YouTubeASLSourceConfig
-from sign_prep.datasets.how2sign import How2SignDataset, How2SignSourceConfig
-from sign_prep.datasets.base import DatasetAdapter, BaseDataset
-from sign_prep.pipeline.context import PipelineContext
-from sign_prep.registry import DATASET_REGISTRY
+from signdata.config.schema import Config
+from signdata.datasets.youtube_asl import YouTubeASLDataset, YouTubeASLSourceConfig
+from signdata.datasets.how2sign import How2SignDataset, How2SignSourceConfig
+from signdata.datasets.base import DatasetAdapter, BaseDataset
+from signdata.pipeline.context import PipelineContext
+from signdata.registry import DATASET_REGISTRY
 
 
 # ── DatasetAdapter ABC ──────────────────────────────────────────────────────

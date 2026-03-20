@@ -13,7 +13,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from sign_prep.utils.availability import (
+from signdata.utils.availability import (
     apply_availability_policy,
     filter_available,
     get_existing_video_ids,

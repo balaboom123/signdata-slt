@@ -1,4 +1,4 @@
-"""CLI argument parsing for sign_prep."""
+"""CLI argument parsing for Signdata."""
 
 import argparse
 from typing import List, Optional
@@ -6,7 +6,7 @@ from typing import List, Optional
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sign Language Preprocessing Pipeline"
+        description="Signdata"
     )
     subparsers = parser.add_subparsers(dest="command")
 

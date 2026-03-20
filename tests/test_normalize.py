@@ -6,7 +6,7 @@ This is the most important test file — covers core numerical logic.
 import numpy as np
 import pytest
 
-from sign_prep.processors.normalize import (
+from signdata.processors.normalize import (
     _apply_keypoint_reduction,
     _apply_visibility_mask,
     _normalize_clip_xyz,

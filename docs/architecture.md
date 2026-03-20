@@ -3,7 +3,7 @@
 ## Entry Point
 
 ```bash
-python -m sign_prep <config.yaml> [--override key=value ...]
+python -m signdata <config.yaml> [--override key=value ...]
 ```
 
 `__main__.py` imports all registry modules, loads the YAML config, and hands it to `PipelineRunner`.
@@ -42,7 +42,7 @@ Three global registries in `registry.py`, populated via decorators:
 | `@register_processor(name)` | `PROCESSOR_REGISTRY` | `BaseProcessor` |
 | `@register_extractor(name)` | `EXTRACTOR_REGISTRY` | `LandmarkExtractor` |
 
-Registration happens at import time. `__main__.py` imports `sign_prep.datasets`, `sign_prep.processors`, and `sign_prep.extractors` to trigger it.
+Registration happens at import time. `__main__.py` imports `signdata.datasets`, `signdata.processors`, and `signdata.extractors` to trigger it.
 
 ## Pipeline Modes
 

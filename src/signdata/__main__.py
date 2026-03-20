@@ -1,16 +1,16 @@
-"""Entry point: python -m sign_prep run|experiment <config.yaml>"""
+"""Entry point: python -m signdata run|experiment <config.yaml>"""
 
 import logging
 import sys
 
 # Ensure registrations happen on import
-import sign_prep.datasets  # noqa: F401
-import sign_prep.processors  # noqa: F401
-import sign_prep.extractors  # noqa: F401
+import signdata.datasets  # noqa: F401
+import signdata.processors  # noqa: F401
+import signdata.extractors  # noqa: F401
 
-from sign_prep.cli import parse_args
-from sign_prep.config import load_config
-from sign_prep.pipeline import PipelineRunner
+from signdata.cli import parse_args
+from signdata.config import load_config
+from signdata.pipeline import PipelineRunner
 
 
 def main():
@@ -22,19 +22,19 @@ def main():
     args = parse_args()
 
     if args.command is None:
-        print("Usage: python -m sign_prep <command> <config.yaml> [options]")
+        print("Usage: python -m signdata <command> <config.yaml> [options]")
         print()
         print("Commands:")
         print("  run         Run a single preprocessing job")
         print("  experiment  Run a multi-job experiment")
         print()
-        print("Run 'python -m sign_prep <command> --help' for details.")
+        print("Run 'python -m signdata <command> --help' for details.")
         sys.exit(1)
 
     if args.command == "run":
         # Handle --list-presets early exit (no config file needed)
         if args.list_presets:
-            from sign_prep.presets import list_presets
+            from signdata.presets import list_presets
             for name, desc in sorted(list_presets().items()):
                 print(f"  {name:30s} {desc}")
             return
@@ -67,8 +67,8 @@ def main():
         runner.run()
 
     elif args.command == "experiment":
-        from sign_prep.config.experiment import load_experiment
-        from sign_prep.pipeline.experiment import ExperimentRunner
+        from signdata.config.experiment import load_experiment
+        from signdata.pipeline.experiment import ExperimentRunner
 
         experiment = load_experiment(args.config)
         runner = ExperimentRunner(

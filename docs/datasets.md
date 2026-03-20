@@ -7,7 +7,7 @@ A large-scale, open-domain ASL-English parallel corpus with 11,000+ YouTube vide
 **Full pipeline:** `download → manifest → extract → normalize → webdataset`
 
 ```bash
-python -m sign_prep configs/youtube_asl/pose_mediapipe.yaml
+python -m signdata configs/youtube_asl/pose_mediapipe.yaml
 ```
 
 Requires `download.video_ids_file` pointing to the video ID list (included at `assets/youtube-asl_youtube_asl_video_ids.txt`). The download step fetches videos via yt-dlp and transcripts via `youtube-transcript-api`.
@@ -19,7 +19,7 @@ Requires `download.video_ids_file` pointing to the video ID list (included at `a
 **Pipeline:** `extract → normalize → webdataset` for the standard pose configs
 
 ```bash
-python -m sign_prep configs/how2sign/pose_mediapipe.yaml
+python -m signdata configs/how2sign/pose_mediapipe.yaml
 ```
 
 **Setup:**

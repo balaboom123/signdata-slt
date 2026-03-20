@@ -6,14 +6,14 @@ from pathlib import Path
 import pytest
 import yaml
 
-from sign_prep.config.loader import (
+from signdata.config.loader import (
     _parse_value,
     _set_nested,
     deep_merge,
     load_config,
     resolve_paths,
 )
-from sign_prep.config.schema import Config
+from signdata.config.schema import Config
 
 
 # ── deep_merge ──────────────────────────────────────────────────────────────
@@ -197,19 +197,19 @@ class TestResolvePaths:
             dataset="test",
             extractor={
                 "name": "mmpose",
-                "pose_model_config": "src/sign_prep/models/configs/model.py",
-                "pose_model_checkpoint": "src/sign_prep/models/checkpoints/model.pth",
-                "det_model_config": "src/sign_prep/models/configs/det.py",
-                "det_model_checkpoint": "src/sign_prep/models/checkpoints/det.pth",
+                "pose_model_config": "src/signdata/models/configs/model.py",
+                "pose_model_checkpoint": "src/signdata/models/checkpoints/model.pth",
+                "det_model_config": "src/signdata/models/configs/det.py",
+                "det_model_checkpoint": "src/signdata/models/checkpoints/det.pth",
             },
         )
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
         assert cfg.extractor.pose_model_config == str(
-            project_root / "src/sign_prep/models/configs/model.py"
+            project_root / "src/signdata/models/configs/model.py"
         )
         assert cfg.extractor.det_model_checkpoint == str(
-            project_root / "src/sign_prep/models/checkpoints/det.pth"
+            project_root / "src/signdata/models/checkpoints/det.pth"
         )
 
     def test_extractor_model_paths_absolute_unchanged(self):
@@ -223,6 +223,83 @@ class TestResolvePaths:
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
         assert Path(cfg.extractor.pose_model_config).as_posix() == "/abs/model.py"
+
+    def test_extractor_checkpoint_paths_fall_back_to_legacy_package_dir(self, tmp_path):
+        cfg = Config(
+            dataset="test",
+            extractor={
+                "name": "mmpose",
+                "pose_model_checkpoint": "src/signdata/models/checkpoints/model.pth",
+                "det_model_checkpoint": "src/signdata/models/checkpoints/det.pth",
+            },
+        )
+        legacy_pose = tmp_path / "src" / "sign_prep" / "models" / "checkpoints" / "model.pth"
+        legacy_det = tmp_path / "src" / "sign_prep" / "models" / "checkpoints" / "det.pth"
+        legacy_pose.parent.mkdir(parents=True, exist_ok=True)
+        legacy_pose.touch()
+        legacy_det.touch()
+
+        cfg = resolve_paths(cfg, tmp_path)
+
+        assert cfg.extractor.pose_model_checkpoint == str(legacy_pose)
+        assert cfg.extractor.det_model_checkpoint == str(legacy_det)
+
+    def test_extractor_checkpoint_paths_fall_back_to_intermediate_package_dir(self, tmp_path):
+        cfg = Config(
+            dataset="test",
+            extractor={
+                "name": "mmpose",
+                "pose_model_checkpoint": "src/signdata/models/checkpoints/model.pth",
+                "det_model_checkpoint": "src/signdata/models/checkpoints/det.pth",
+            },
+        )
+        intermediate_pose = tmp_path / "src" / "sltpipe" / "models" / "checkpoints" / "model.pth"
+        intermediate_det = tmp_path / "src" / "sltpipe" / "models" / "checkpoints" / "det.pth"
+        intermediate_pose.parent.mkdir(parents=True, exist_ok=True)
+        intermediate_pose.touch()
+        intermediate_det.touch()
+
+        cfg = resolve_paths(cfg, tmp_path)
+
+        assert cfg.extractor.pose_model_checkpoint == str(intermediate_pose)
+        assert cfg.extractor.det_model_checkpoint == str(intermediate_det)
+
+    def test_extractor_model_paths_prefer_configured_package_dir(self, tmp_path):
+        cfg = Config(
+            dataset="test",
+            extractor={
+                "name": "mmpose",
+                "pose_model_config": "src/sign_prep/models/configs/model.py",
+                "pose_model_checkpoint": "src/signdata/models/checkpoints/model.pth",
+            },
+        )
+        new_checkpoint = tmp_path / "src" / "signdata" / "models" / "checkpoints" / "model.pth"
+        legacy_config = tmp_path / "src" / "sign_prep" / "models" / "configs" / "model.py"
+        new_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        legacy_config.parent.mkdir(parents=True, exist_ok=True)
+        new_checkpoint.touch()
+        legacy_config.touch()
+
+        cfg = resolve_paths(cfg, tmp_path)
+
+        assert cfg.extractor.pose_model_config == str(legacy_config)
+        assert cfg.extractor.pose_model_checkpoint == str(new_checkpoint)
+
+    def test_extractor_model_paths_fall_forward_from_intermediate_package_dir(self, tmp_path):
+        cfg = Config(
+            dataset="test",
+            extractor={
+                "name": "mmpose",
+                "pose_model_config": "src/sltpipe/models/configs/model.py",
+            },
+        )
+        canonical_config = tmp_path / "src" / "signdata" / "models" / "configs" / "model.py"
+        canonical_config.parent.mkdir(parents=True, exist_ok=True)
+        canonical_config.touch()
+
+        cfg = resolve_paths(cfg, tmp_path)
+
+        assert cfg.extractor.pose_model_config == str(canonical_config)
 
     def test_cropped_clips_default_resolved(self):
         """cropped_clips defaults to <root>/cropped_clips/<run_name> when not set."""
@@ -279,8 +356,8 @@ class TestLoadConfig:
 
     def test_load_youtube_asl_pose_mediapipe(self, project_root):
         # Trigger registrations
-        import sign_prep.datasets
-        import sign_prep.processors
+        import signdata.datasets
+        import signdata.processors
 
         yaml_path = str(project_root / "configs" / "jobs" / "youtube_asl_pose_mediapipe.yaml")
         if not os.path.exists(yaml_path):
@@ -292,8 +369,8 @@ class TestLoadConfig:
         assert cfg.extractor.name == "mediapipe"
 
     def test_load_how2sign_pose_mediapipe(self, project_root):
-        import sign_prep.datasets
-        import sign_prep.processors
+        import signdata.datasets
+        import signdata.processors
 
         yaml_path = str(project_root / "configs" / "jobs" / "how2sign_pose_mediapipe.yaml")
         if not os.path.exists(yaml_path):
@@ -304,8 +381,8 @@ class TestLoadConfig:
         assert cfg.recipe == "pose"
 
     def test_cli_overrides_apply(self, project_root):
-        import sign_prep.datasets
-        import sign_prep.processors
+        import signdata.datasets
+        import signdata.processors
 
         yaml_path = str(project_root / "configs" / "jobs" / "youtube_asl_pose_mediapipe.yaml")
         if not os.path.exists(yaml_path):
@@ -324,8 +401,8 @@ class TestLoadConfig:
 
     def test_missing_recipe_raises(self, tmp_path):
         """Config without recipe raises ValueError."""
-        import sign_prep.datasets
-        import sign_prep.processors
+        import signdata.datasets
+        import signdata.processors
 
         configs_dir = tmp_path / "configs" / "jobs"
         configs_dir.mkdir(parents=True)

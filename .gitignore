@@ -171,6 +171,8 @@ cython_debug/
 dataset/
 
 # Model checkpoints (large files, download separately)
+src/signdata/models/checkpoints/*.pth
+src/sltpipe/models/checkpoints/*.pth
 src/sign_prep/models/checkpoints/*.pth
 
 # Test notebooks and temporary scripts

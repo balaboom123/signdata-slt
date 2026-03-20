@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from sign_prep.config.schema import (
+from signdata.config.schema import (
     ClipVideoConfig,
     Config,
     CropVideoConfig,

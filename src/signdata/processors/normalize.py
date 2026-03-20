@@ -89,7 +89,7 @@ def _normalize_clip_xyz(
 ) -> np.ndarray:
     """Normalize landmarks using whole-clip scaling."""
     import logging
-    logger = logging.getLogger("sign_prep.normalize")
+    logger = logging.getLogger("signdata.normalize")
 
     if xyz_masked.ndim != 3 or xyz_masked.shape[-1] != 3:
         raise ValueError(f"Expected shape (T, K, 3), got {xyz_masked.shape}")

@@ -32,6 +32,49 @@ def _is_absolute(path_str: str) -> bool:
     return Path(path_str).is_absolute() or path_str.startswith("/")
 
 
+PACKAGE_DIR_ALIASES = ("signdata", "sltpipe", "sign_prep")
+
+
+def _alternate_package_dirs(path: Path) -> List[Path]:
+    """Return alternate package-dir candidates for migrated model assets.
+
+    This preserves compatibility across the package rename chain
+    ``src/sign_prep`` -> ``src/sltpipe`` -> ``src/signdata`` so upgraded
+    worktrees can continue using already-downloaded assets left in older
+    ignored directories.
+    """
+    parts = list(path.parts)
+    for i in range(len(parts) - 1):
+        if parts[i] != "src":
+            continue
+        current = parts[i + 1]
+        if current not in PACKAGE_DIR_ALIASES:
+            continue
+
+        alternates = []
+        for candidate in PACKAGE_DIR_ALIASES:
+            if candidate == current:
+                continue
+            alt_parts = parts.copy()
+            alt_parts[i + 1] = candidate
+            alternates.append(Path(*alt_parts))
+        return alternates
+    return []
+
+
+def _resolve_model_path(path_str: str, project_root: Path) -> str:
+    """Resolve model paths relative to project root with rename fallback."""
+    resolved = Path(path_str) if _is_absolute(path_str) else project_root / path_str
+    alternate_paths = _alternate_package_dirs(resolved)
+
+    if not resolved.exists():
+        for alternate in alternate_paths:
+            if alternate.exists():
+                return str(alternate)
+
+    return str(resolved)
+
+
 def resolve_paths(config: Config, project_root: Path) -> Config:
     """Resolve relative paths to absolute paths based on project root."""
     paths = config.paths
@@ -95,12 +138,14 @@ def resolve_paths(config: Config, project_root: Path) -> Config:
     if vid_file and not _is_absolute(vid_file):
         config.source["video_ids_file"] = str(project_root / vid_file)
 
-    # Resolve extractor model paths relative to project root
+    # Resolve extractor model paths relative to project root.
+    # During the package rename, prefer the configured path but fall back to
+    # the mirrored legacy/new package path if that is the only existing copy.
     for attr in ("pose_model_config", "pose_model_checkpoint",
                  "det_model_config", "det_model_checkpoint"):
         val = getattr(config.extractor, attr)
-        if val and not _is_absolute(val):
-            setattr(config.extractor, attr, str(project_root / val))
+        if val:
+            setattr(config.extractor, attr, _resolve_model_path(val, project_root))
 
     return config
 

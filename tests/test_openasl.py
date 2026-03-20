@@ -18,11 +18,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from sign_prep.config.schema import Config
-from sign_prep.datasets.openasl import OpenASLDataset, OpenASLSourceConfig
-from sign_prep.pipeline.context import PipelineContext
-from sign_prep.registry import DATASET_REGISTRY
-from sign_prep.utils.availability import get_existing_video_ids
+from signdata.config.schema import Config
+from signdata.datasets.openasl import OpenASLDataset, OpenASLSourceConfig
+from signdata.pipeline.context import PipelineContext
+from signdata.registry import DATASET_REGISTRY
+from signdata.utils.availability import get_existing_video_ids
 
 
 # ── Registration ──────────────────────────────────────────────────────────

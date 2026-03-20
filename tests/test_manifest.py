@@ -4,10 +4,10 @@ Tests the segment processing logic that was moved from
 ManifestProcessor to the YouTubeASLDataset adapter in Phase 2.
 """
 
-import sign_prep.datasets  # noqa: F401 – trigger registrations
-import sign_prep.processors  # noqa: F401
+import signdata.datasets  # noqa: F401 – trigger registrations
+import signdata.processors  # noqa: F401
 
-from sign_prep.datasets.youtube_asl import YouTubeASLDataset
+from signdata.datasets.youtube_asl import YouTubeASLDataset
 
 
 def _make_adapter():

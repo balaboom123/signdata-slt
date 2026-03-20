@@ -83,13 +83,13 @@ MediaPipe works on CPU out of the box. MMPose requires a CUDA-capable GPU and ad
 
 ```bash
 # Download YouTube-ASL videos, extract MediaPipe landmarks, normalize, and package into WebDataset shards
-python -m sign_prep configs/youtube_asl/pose_mediapipe.yaml
+python -m signdata configs/youtube_asl/pose_mediapipe.yaml
 
 # Extract MMPose landmarks from pre-downloaded How2Sign data (CUDA required)
-python -m sign_prep configs/how2sign/pose_mmpose.yaml
+python -m signdata configs/how2sign/pose_mmpose.yaml
 
 # Override any config value from the command line (e.g. more workers, stop after extraction)
-python -m sign_prep configs/youtube_asl/pose_mediapipe.yaml \
+python -m signdata configs/youtube_asl/pose_mediapipe.yaml \
   --override processing.max_workers=8 pipeline.stop_at=extract
 ```
 

@@ -1,6 +1,6 @@
 """Tests for the component registry system."""
 
-from sign_prep.registry import (
+from signdata.registry import (
     DATASET_REGISTRY,
     EXTRACTOR_REGISTRY,
     PROCESSOR_REGISTRY,
@@ -51,14 +51,14 @@ class TestRealRegistrations:
     """Verify all real registrations exist after importing modules."""
 
     def test_datasets_registered(self):
-        import sign_prep.datasets  # noqa: F401
+        import signdata.datasets  # noqa: F401
 
         assert "youtube_asl" in DATASET_REGISTRY
         assert "how2sign" in DATASET_REGISTRY
         assert len(DATASET_REGISTRY) >= 2
 
     def test_processors_registered(self):
-        import sign_prep.processors  # noqa: F401
+        import signdata.processors  # noqa: F401
 
         expected = [
             "extract", "normalize", "clip_video",
@@ -69,7 +69,7 @@ class TestRealRegistrations:
         assert len(PROCESSOR_REGISTRY) >= 6
 
     def test_extractors_registered(self):
-        import sign_prep.extractors  # noqa: F401
+        import signdata.extractors  # noqa: F401
 
         assert "mediapipe" in EXTRACTOR_REGISTRY
         assert "mmpose" in EXTRACTOR_REGISTRY

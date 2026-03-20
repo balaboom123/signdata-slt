@@ -16,14 +16,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-from sign_prep.cli import parse_args
-from sign_prep.config.experiment import (
+from signdata.cli import parse_args
+from signdata.config.experiment import (
     ExperimentConfig,
     JobEntry,
     _flatten_overrides,
     load_experiment,
 )
-from sign_prep.pipeline.experiment import ExperimentRunner, JobResult
+from signdata.pipeline.experiment import ExperimentRunner, JobResult
 
 
 # ── Schema ────────────────────────────────────────────────────────────
@@ -268,8 +268,8 @@ class TestExperimentRunner:
     def _make_experiment(self, jobs):
         return ExperimentConfig(name="test", jobs=jobs)
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_runs_all_jobs(self, mock_load, mock_runner_cls):
         mock_context = MagicMock()
         mock_context.stats = {"acquire": {"total": 10}}
@@ -289,8 +289,8 @@ class TestExperimentRunner:
         assert mock_load.call_count == 2
         assert mock_runner_cls.call_count == 2
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_continues_after_failure(self, mock_load, mock_runner_cls):
         """If job 1 fails, job 2 still runs."""
         mock_context = MagicMock()
@@ -318,8 +318,8 @@ class TestExperimentRunner:
         assert "job 1 failed" in results[0].error
         assert results[1].status == "success"
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_force_all_propagated(self, mock_load, mock_runner_cls):
         mock_context = MagicMock()
         mock_context.stats = {}
@@ -337,8 +337,8 @@ class TestExperimentRunner:
             mock_load.return_value, force_all=True,
         )
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_overrides_passed_to_load_config(self, mock_load, mock_runner_cls):
         mock_context = MagicMock()
         mock_context.stats = {}
@@ -360,8 +360,8 @@ class TestExperimentRunner:
             dict_overrides={"processing.target_fps": None},
         )
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_nested_overrides_flattened(self, mock_load, mock_runner_cls):
         mock_context = MagicMock()
         mock_context.stats = {}
@@ -383,8 +383,8 @@ class TestExperimentRunner:
             dict_overrides={"processing.target_fps": 30.0},
         )
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_no_overrides_passes_none(self, mock_load, mock_runner_cls):
         mock_context = MagicMock()
         mock_context.stats = {}
@@ -402,8 +402,8 @@ class TestExperimentRunner:
             "/path/a.yaml", dict_overrides=None,
         )
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_stats_collected(self, mock_load, mock_runner_cls):
         mock_context = MagicMock()
         mock_context.stats = {"extract": {"total": 100}}
@@ -419,8 +419,8 @@ class TestExperimentRunner:
 
         assert results[0].stats == {"extract": {"total": 100}}
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_all_jobs_fail(self, mock_load, mock_runner_cls):
         mock_runner_cls.return_value.run.side_effect = RuntimeError("boom")
         mock_load.return_value = MagicMock()
@@ -436,8 +436,8 @@ class TestExperimentRunner:
         assert len(results) == 2
         assert all(r.status == "failed" for r in results)
 
-    @patch("sign_prep.pipeline.experiment.PipelineRunner")
-    @patch("sign_prep.pipeline.experiment.load_config")
+    @patch("signdata.pipeline.experiment.PipelineRunner")
+    @patch("signdata.pipeline.experiment.load_config")
     def test_config_load_failure_captured(self, mock_load, mock_runner_cls):
         """If load_config fails, the job is marked as failed."""
         mock_load.side_effect = ValueError("bad config")
@@ -495,7 +495,7 @@ class TestLoadConfigDictOverrides:
         return str(yaml_path)
 
     def test_dict_overrides_applied(self, tmp_path):
-        from sign_prep.config.loader import load_config
+        from signdata.config.loader import load_config
 
         path = self._write_job_config(tmp_path)
         config = load_config(path, dict_overrides={
@@ -504,7 +504,7 @@ class TestLoadConfigDictOverrides:
         assert config.processing.target_fps == 30.0
 
     def test_dict_overrides_null_value(self, tmp_path):
-        from sign_prep.config.loader import load_config
+        from signdata.config.loader import load_config
 
         path = self._write_job_config(tmp_path)
         config = load_config(path, dict_overrides={
@@ -514,7 +514,7 @@ class TestLoadConfigDictOverrides:
 
     def test_dict_overrides_after_cli_overrides(self, tmp_path):
         """Dict overrides take precedence over CLI overrides."""
-        from sign_prep.config.loader import load_config
+        from signdata.config.loader import load_config
 
         path = self._write_job_config(tmp_path)
         config = load_config(
@@ -525,7 +525,7 @@ class TestLoadConfigDictOverrides:
         assert config.processing.frame_skip == 20
 
     def test_dict_overrides_none_is_noop(self, tmp_path):
-        from sign_prep.config.loader import load_config
+        from signdata.config.loader import load_config
 
         path = self._write_job_config(tmp_path)
         config = load_config(path, dict_overrides=None)
@@ -533,7 +533,7 @@ class TestLoadConfigDictOverrides:
 
     def test_dict_overrides_dataset_validated_after_override(self, tmp_path):
         """Overriding dataset via dict_overrides validates the overridden name."""
-        from sign_prep.config.loader import load_config
+        from signdata.config.loader import load_config
 
         # Base YAML has dataset=youtube_asl (valid).  Dict override changes
         # it to a name not in the registry.  With correct ordering the

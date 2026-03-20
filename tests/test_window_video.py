@@ -19,17 +19,17 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from sign_prep.config.schema import Config
-from sign_prep.processors.window_video import (
+from signdata.config.schema import Config
+from signdata.processors.window_video import (
     WindowVideoConfig,
     WindowVideoProcessor,
     generate_windows,
     _get_video_duration,
 )
-from sign_prep.pipeline.context import PipelineContext
-from sign_prep.datasets.youtube_asl import YouTubeASLDataset
-import sign_prep.processors  # noqa: F401 – trigger registrations
-from sign_prep.registry import PROCESSOR_REGISTRY
+from signdata.pipeline.context import PipelineContext
+from signdata.datasets.youtube_asl import YouTubeASLDataset
+import signdata.processors  # noqa: F401 – trigger registrations
+from signdata.registry import PROCESSOR_REGISTRY
 
 
 # ===========================================================================
@@ -216,7 +216,7 @@ class TestWindowVideoProcessorWithTiming:
 
         # Video files unavailable → falls back to max(END) per VIDEO_ID
         with patch(
-            "sign_prep.processors.window_video._get_video_duration",
+            "signdata.processors.window_video._get_video_duration",
             return_value=0.0,
         ):
             ctx = processor.run(ctx)
@@ -274,7 +274,7 @@ class TestWindowVideoProcessorWithTiming:
 
         # Mock duration to 30s (longer than caption span 5-20)
         with patch(
-            "sign_prep.processors.window_video._get_video_duration",
+            "signdata.processors.window_video._get_video_duration",
             return_value=30.0,
         ):
             ctx = processor.run(ctx)
@@ -352,7 +352,7 @@ class TestWindowVideoProcessorWithTiming:
         ctx = self._make_context(cfg, manifest_path, tmp_path)
 
         with patch(
-            "sign_prep.processors.window_video._get_video_duration",
+            "signdata.processors.window_video._get_video_duration",
             return_value=0.0,
         ):
             ctx = processor.run(ctx)
@@ -405,7 +405,7 @@ class TestWindowVideoProcessorNoTiming:
 
         # Mock _get_video_duration to return known durations
         with patch(
-            "sign_prep.processors.window_video._get_video_duration",
+            "signdata.processors.window_video._get_video_duration",
             side_effect=lambda path: 25.0 if "vid_a" in path else 15.0,
         ):
             ctx = processor.run(ctx)
@@ -453,7 +453,7 @@ class TestWindowVideoProcessorNoTiming:
         )
 
         with patch(
-            "sign_prep.processors.window_video._get_video_duration",
+            "signdata.processors.window_video._get_video_duration",
             return_value=0.0,
         ):
             with pytest.raises(RuntimeError, match="produced no windows"):

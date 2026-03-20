@@ -1,6 +1,6 @@
 """Tests for FPSSampler (video.py)."""
 
-from sign_prep.utils.video import FPSSampler
+from signdata.utils.video import FPSSampler
 
 
 class TestFPSSamplerReduceMode:

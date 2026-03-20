@@ -5,15 +5,15 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-import sign_prep.datasets  # noqa: F401 – trigger registrations
-import sign_prep.processors  # noqa: F401
+import signdata.datasets  # noqa: F401 – trigger registrations
+import signdata.processors  # noqa: F401
 
-from sign_prep.config.schema import Config
-from sign_prep.datasets.youtube_asl import YouTubeASLDataset
-from sign_prep.pipeline.context import PipelineContext
-from sign_prep.pipeline.recipes import get_steps, should_run_stage, RECIPES, OPTIONAL_STAGES
-from sign_prep.pipeline.runner import PipelineRunner
-from sign_prep.registry import PROCESSOR_REGISTRY
+from signdata.config.schema import Config
+from signdata.datasets.youtube_asl import YouTubeASLDataset
+from signdata.pipeline.context import PipelineContext
+from signdata.pipeline.recipes import get_steps, should_run_stage, RECIPES, OPTIONAL_STAGES
+from signdata.pipeline.runner import PipelineRunner
+from signdata.registry import PROCESSOR_REGISTRY
 
 
 # ── PipelineContext ─────────────────────────────────────────────────────────

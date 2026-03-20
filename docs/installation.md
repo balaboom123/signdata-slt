@@ -3,8 +3,8 @@
 ## Base Installation
 
 ```bash
-git clone https://github.com/gorden-chen/Sign-Language-Preprocessing.git
-cd Sign-Language-Preprocessing
+git clone https://github.com/balaboom123/signdata-slt.git
+cd signdata-slt
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -34,10 +34,10 @@ export PYTHONPATH="/path/to/mmpose:$PYTHONPATH"
 ### 3. Download model checkpoints
 
 ```bash
-wget -P src/sign_prep/models/checkpoints/ \
+wget -P src/signdata/models/checkpoints/ \
   https://download.openmmlab.com/mmpose/v1/wholebody_3d_keypoint/rtmw3d/rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_20240626.pth
 
-wget -P src/sign_prep/models/checkpoints/ \
+wget -P src/signdata/models/checkpoints/ \
   https://download.openmmlab.com/mmpose/v1/projects/rtmpose/rtmdet_nano_8xb32-100e_coco-obj365-person-05d8511e.pth
 ```
 

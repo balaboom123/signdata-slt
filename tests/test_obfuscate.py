@@ -45,16 +45,16 @@ class _SyncExecutor:
             f.set_exception(e)
         return f
 
-from sign_prep.config.schema import Config
-from sign_prep.processors.obfuscate import (
+from signdata.config.schema import Config
+from signdata.processors.obfuscate import (
     ObfuscateConfig,
     ObfuscateProcessor,
     _obfuscate_single_video,
 )
-from sign_prep.pipeline.context import PipelineContext
-from sign_prep.datasets.youtube_asl import YouTubeASLDataset
-import sign_prep.processors  # noqa: F401 – trigger registrations
-from sign_prep.registry import PROCESSOR_REGISTRY
+from signdata.pipeline.context import PipelineContext
+from signdata.datasets.youtube_asl import YouTubeASLDataset
+import signdata.processors  # noqa: F401 – trigger registrations
+from signdata.registry import PROCESSOR_REGISTRY
 
 
 # ===========================================================================
@@ -101,7 +101,7 @@ class TestObfuscateConfig:
 class TestObfuscateSingleVideo:
     def test_skips_existing_output(self):
         """If output already exists and skip_existing=True, return skip message."""
-        with patch("sign_prep.processors.obfuscate.os.path.exists", return_value=True):
+        with patch("signdata.processors.obfuscate.os.path.exists", return_value=True):
             name, ok, msg = _obfuscate_single_video((
                 "/fake/in.mp4", "/fake/out.mp4",
                 "blur", 51, 10, 0.5, True,
@@ -116,7 +116,7 @@ class TestObfuscateSingleVideo:
                 return True   # output exists
             return False      # input doesn't exist
 
-        with patch("sign_prep.processors.obfuscate.os.path.exists", side_effect=fake_exists):
+        with patch("signdata.processors.obfuscate.os.path.exists", side_effect=fake_exists):
             name, ok, msg = _obfuscate_single_video((
                 "/fake/in.mp4", "/fake/out.mp4",
                 "blur", 51, 10, 0.5, False,
@@ -132,7 +132,7 @@ class TestObfuscateSingleVideo:
                 return False  # output doesn't exist
             return False  # input doesn't exist either
 
-        with patch("sign_prep.processors.obfuscate.os.path.exists", side_effect=fake_exists):
+        with patch("signdata.processors.obfuscate.os.path.exists", side_effect=fake_exists):
             name, ok, msg = _obfuscate_single_video((
                 "/fake/in.mp4", "/fake/out.mp4",
                 "blur", 51, 10, 0.5, True,
@@ -185,9 +185,9 @@ class TestObfuscateProcessorRun:
             return os.path.basename(args[1]), True, "ok"
 
         with patch(
-            "sign_prep.processors.obfuscate.ProcessPoolExecutor", _SyncExecutor,
+            "signdata.processors.obfuscate.ProcessPoolExecutor", _SyncExecutor,
         ), patch(
-            "sign_prep.processors.obfuscate._obfuscate_single_video", fake_worker,
+            "signdata.processors.obfuscate._obfuscate_single_video", fake_worker,
         ):
             ctx = processor.run(ctx)
 
@@ -222,9 +222,9 @@ class TestObfuscateProcessorRun:
             return os.path.basename(args[1]), True, "ok"
 
         with patch(
-            "sign_prep.processors.obfuscate.ProcessPoolExecutor", _SyncExecutor,
+            "signdata.processors.obfuscate.ProcessPoolExecutor", _SyncExecutor,
         ), patch(
-            "sign_prep.processors.obfuscate._obfuscate_single_video", fake_worker,
+            "signdata.processors.obfuscate._obfuscate_single_video", fake_worker,
         ):
             ctx = processor.run(ctx)
 
@@ -264,9 +264,9 @@ class TestObfuscateProcessorRun:
             return os.path.basename(args[1]), True, "ok"
 
         with patch(
-            "sign_prep.processors.obfuscate.ProcessPoolExecutor", _SyncExecutor,
+            "signdata.processors.obfuscate.ProcessPoolExecutor", _SyncExecutor,
         ), patch(
-            "sign_prep.processors.obfuscate._obfuscate_single_video", fake_worker,
+            "signdata.processors.obfuscate._obfuscate_single_video", fake_worker,
         ):
             ctx = processor.run(ctx)
 

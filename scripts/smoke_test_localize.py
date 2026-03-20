@@ -85,12 +85,12 @@ def run_smoke_test(video_path: str, device: str, padding: float, max_frames: int
         sys.exit(1)
     print(f"  ffmpeg : {ffmpeg_path}")
 
-    from sign_prep.config.schema import Config
-    from sign_prep.pipeline.context import PipelineContext
-    from sign_prep.datasets.youtube_asl import YouTubeASLDataset
-    from sign_prep.processors.detect_person import DetectPersonProcessor
-    from sign_prep.processors.clip_video import ClipVideoProcessor
-    from sign_prep.processors.crop_video import CropVideoProcessor
+    from signdata.config.schema import Config
+    from signdata.pipeline.context import PipelineContext
+    from signdata.datasets.youtube_asl import YouTubeASLDataset
+    from signdata.processors.detect_person import DetectPersonProcessor
+    from signdata.processors.clip_video import ClipVideoProcessor
+    from signdata.processors.crop_video import CropVideoProcessor
 
     video_path = os.path.abspath(video_path)
     if not os.path.exists(video_path):

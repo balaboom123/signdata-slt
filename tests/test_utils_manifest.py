@@ -1,9 +1,9 @@
-"""Tests for sign_prep.utils.manifest — canonical schema and shared I/O."""
+"""Tests for signdata.utils.manifest — canonical schema and shared I/O."""
 
 import pandas as pd
 import pytest
 
-from sign_prep.utils.manifest import (
+from signdata.utils.manifest import (
     REQUIRED_COLUMNS,
     TIMING_COLUMNS,
     LABEL_COLUMNS,

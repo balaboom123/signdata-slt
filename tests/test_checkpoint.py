@@ -1,11 +1,11 @@
-"""Tests for sign_prep.pipeline.checkpoint — stage markers and hashing."""
+"""Tests for signdata.pipeline.checkpoint — stage markers and hashing."""
 
 import json
 
 import pandas as pd
 import pytest
 
-from sign_prep.pipeline.checkpoint import (
+from signdata.pipeline.checkpoint import (
     SUCCESS_FILENAME,
     STAGE_HASH_FIELDS,
     compute_stage_hash,

@@ -22,7 +22,7 @@ from .base import BaseProcessor
 from ..registry import register_processor
 from ..utils.manifest import read_manifest, get_timing_columns, find_video_file
 
-# Module-level import so tests can patch sign_prep...detect_person.YOLO
+# Module-level import so tests can patch signdata...detect_person.YOLO
 # ultralytics is an optional dependency; import error surfaces only at runtime.
 try:
     from ultralytics import YOLO

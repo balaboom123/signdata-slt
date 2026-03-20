@@ -1,6 +1,6 @@
 """Tests for text normalization (text.py)."""
 
-from sign_prep.utils.text import normalize_text
+from signdata.utils.text import normalize_text
 
 
 class TestNormalizeText:

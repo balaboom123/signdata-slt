@@ -10,7 +10,7 @@ Config values are merged in this order (later wins):
 4. **CLI overrides** -- `--override key=value` arguments
 
 ```bash
-python -m sign_prep configs/youtube_asl/pose_mediapipe.yaml \
+python -m signdata configs/youtube_asl/pose_mediapipe.yaml \
   --override processing.max_workers=8 normalize.remove_z=true
 ```
 
