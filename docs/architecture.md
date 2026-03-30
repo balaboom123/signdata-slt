@@ -80,6 +80,8 @@ reads and writes through `PipelineContext` instead of hardcoding artifact paths.
 
 ## Package Layout
 
+- `src/signdata/config/` contains Pydantic config schemas (`schema.py`), YAML loading and path resolution (`loader.py`), and experiment config parsing (`experiment.py`).
+- `src/signdata/pipeline/` contains the pipeline runner (`runner.py`), shared pipeline context (`context.py`), stage checkpoint/success markers (`checkpoint.py`), and the experiment runner (`experiment.py`).
 - `src/signdata/datasets/` contains dataset adapters.
 - `src/signdata/processors/detection/` contains detector backends and bbox utilities.
 - `src/signdata/processors/pose/` contains pose estimators and presets.
@@ -88,6 +90,7 @@ reads and writes through `PipelineContext` instead of hardcoding artifact paths.
 - `src/signdata/processors/` contains top-level processors such as `video2pose` and `video2crop`.
 - `src/signdata/post_processors/` contains post-processing recipes such as `normalize`.
 - `src/signdata/output/` contains output writers such as `webdataset`.
+- `src/signdata/utils/` contains shared helpers for video I/O, file discovery, text normalization, manifest reading/validation, and video availability filtering.
 - `resources/` contains shipped model config assets.
 
 ## See Also

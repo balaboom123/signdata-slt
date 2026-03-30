@@ -19,7 +19,10 @@ python -m signdata run configs/jobs/youtube_asl/video.yaml
 Requires `dataset.source.video_ids_file` pointing to the video ID list
 (included at `assets/youtube-asl_youtube_asl_video_ids.txt`). The dataset
 download stage fetches videos via yt-dlp and transcripts via
-`youtube-transcript-api`.
+`youtube-transcript-api`. If transcript requests start failing with
+`RequestBlocked` or `IpBlocked`, configure
+`dataset.source.transcript_proxy_http` / `dataset.source.transcript_proxy_https`
+or retry from a non-blocked residential IP.
 
 ## How2Sign
 

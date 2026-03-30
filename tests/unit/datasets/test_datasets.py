@@ -5,12 +5,19 @@ Covers validate_config, get_source_config, download, and build_manifest.
 
 import json
 import os
+import sys
+import types
 
 import pandas as pd
 import pytest
 
 from signdata.config.schema import Config
-from signdata.datasets.youtube_asl import YouTubeASLDataset, YouTubeASLSourceConfig
+from signdata.datasets.youtube_asl import (
+    DEFAULT_DOWNLOAD_FORMAT,
+    DEFAULT_TRANSCRIPT_LANGUAGES,
+    YouTubeASLDataset,
+    YouTubeASLSourceConfig,
+)
 from signdata.datasets.how2sign import How2SignDataset, How2SignSourceConfig
 from signdata.datasets.base import DatasetAdapter, BaseDataset
 from signdata.pipeline.context import PipelineContext
@@ -104,7 +111,9 @@ class TestYouTubeASLSourceConfig:
         adapter = YouTubeASLDataset()
         source = adapter.get_source_config(cfg)
 
-        assert source.languages == ["en"]
+        assert source.languages == DEFAULT_TRANSCRIPT_LANGUAGES
+        assert source.download_format == DEFAULT_DOWNLOAD_FORMAT
+        assert "worstaudio" in source.download_format
         assert source.concurrent_fragments == 5
         assert source.text_processing.fix_encoding is True
         assert source.text_processing.lowercase is False
@@ -128,6 +137,135 @@ class TestYouTubeASLSourceConfig:
         assert source.text_processing.lowercase is True
         assert source.text_processing.strip_punctuation is True
         assert source.text_processing.fix_encoding is True  # default preserved
+
+    def test_source_config_transcript_network_options(self):
+        cfg = Config(
+            dataset={
+                "name": "youtube_asl",
+                "source": {
+                    "transcript_proxy_https": "http://proxy.example:8080",
+                    "stop_on_transcript_block": False,
+                },
+            },
+        )
+        adapter = YouTubeASLDataset()
+        source = adapter.get_source_config(cfg)
+
+        assert source.transcript_proxy_http is None
+        assert source.transcript_proxy_https == "http://proxy.example:8080"
+        assert source.stop_on_transcript_block is False
+
+
+class TestYouTubeASLTranscriptDownload:
+    @staticmethod
+    def _install_fake_youtube_transcript_api(
+        monkeypatch,
+        api_cls,
+        blocked_error_cls,
+    ):
+        root = types.ModuleType("youtube_transcript_api")
+        root.YouTubeTranscriptApi = api_cls
+
+        errors = types.ModuleType("youtube_transcript_api._errors")
+        errors.TranscriptsDisabled = type("TranscriptsDisabled", (Exception,), {})
+        errors.NoTranscriptFound = type("NoTranscriptFound", (Exception,), {})
+        errors.VideoUnavailable = type("VideoUnavailable", (Exception,), {})
+        errors.RequestBlocked = blocked_error_cls
+        errors.IpBlocked = blocked_error_cls
+
+        formatters = types.ModuleType("youtube_transcript_api.formatters")
+
+        class JSONFormatter:
+            def format_transcript(self, transcript):
+                return json.dumps(transcript.to_raw_data())
+
+        formatters.JSONFormatter = JSONFormatter
+
+        proxies = types.ModuleType("youtube_transcript_api.proxies")
+
+        class GenericProxyConfig:
+            def __init__(self, http_url=None, https_url=None):
+                self.http_url = http_url
+                self.https_url = https_url
+
+        proxies.GenericProxyConfig = GenericProxyConfig
+
+        monkeypatch.setitem(sys.modules, "youtube_transcript_api", root)
+        monkeypatch.setitem(sys.modules, "youtube_transcript_api._errors", errors)
+        monkeypatch.setitem(
+            sys.modules, "youtube_transcript_api.formatters", formatters
+        )
+        monkeypatch.setitem(sys.modules, "youtube_transcript_api.proxies", proxies)
+
+    def test_download_transcripts_accepts_list_payload(self, tmp_path, monkeypatch):
+        class RequestBlocked(Exception):
+            pass
+
+        class DummyApi:
+            def __init__(self, proxy_config=None):
+                self.proxy_config = proxy_config
+
+            def fetch(self, video_id, languages):
+                return [{"text": "Hello", "start": 0.0, "duration": 1.5}]
+
+        self._install_fake_youtube_transcript_api(
+            monkeypatch, DummyApi, RequestBlocked
+        )
+        monkeypatch.setattr("signdata.datasets.youtube_asl.time.sleep", lambda _: None)
+
+        ids_file = tmp_path / "ids.txt"
+        ids_file.write_text("vid001\n", encoding="utf-8")
+        transcript_dir = tmp_path / "transcripts"
+        transcript_dir.mkdir()
+
+        source = YouTubeASLSourceConfig(video_ids_file=str(ids_file))
+        stats = YouTubeASLDataset()._download_transcripts(
+            str(ids_file), str(transcript_dir), source
+        )
+
+        assert stats["downloaded"] == 1
+        assert stats["errors"] == 0
+        assert stats["blocked"] is False
+        assert json.loads((transcript_dir / "vid001.json").read_text()) == [
+            {"text": "Hello", "start": 0.0, "duration": 1.5},
+        ]
+
+    def test_download_transcripts_stops_after_ip_block(
+        self, tmp_path, monkeypatch
+    ):
+        class RequestBlocked(Exception):
+            pass
+
+        class DummyApi:
+            def __init__(self, proxy_config=None):
+                self.proxy_config = proxy_config
+
+            def fetch(self, video_id, languages):
+                raise RequestBlocked(video_id)
+
+        self._install_fake_youtube_transcript_api(
+            monkeypatch, DummyApi, RequestBlocked
+        )
+        monkeypatch.setattr("signdata.datasets.youtube_asl.time.sleep", lambda _: None)
+
+        ids_file = tmp_path / "ids.txt"
+        ids_file.write_text("vid001\nvid002\n", encoding="utf-8")
+        transcript_dir = tmp_path / "transcripts"
+        transcript_dir.mkdir()
+
+        source = YouTubeASLSourceConfig(
+            video_ids_file=str(ids_file),
+            stop_on_transcript_block=True,
+        )
+        stats = YouTubeASLDataset()._download_transcripts(
+            str(ids_file), str(transcript_dir), source
+        )
+
+        assert stats["attempted"] == 1
+        assert stats["downloaded"] == 0
+        assert stats["errors"] == 1
+        assert stats["blocked"] is True
+        assert not (transcript_dir / "vid001.json").exists()
 
 
 # ── YouTube-ASL build_manifest ──────────────────────────────────────────────

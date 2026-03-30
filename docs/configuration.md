@@ -4,6 +4,7 @@
 
 Runnable job YAMLs live under `configs/jobs/<dataset>/`.
 Experiment YAMLs live under `configs/experiments/` and reference job paths relative to `configs/`.
+Jobs may also declare a top-level `base:` key to inherit one or more shared YAML files before local values are applied.
 
 ```bash
 python -m signdata run configs/jobs/youtube_asl/mediapipe.yaml \
@@ -17,9 +18,10 @@ python -m signdata experiment configs/experiments/baseline_youtube_asl.yaml
 Config values are applied in this order, with later values winning:
 
 1. Pydantic defaults from `src/signdata/config/schema.py`
-2. Job YAML values
-3. CLI overrides passed to `python -m signdata run`
-4. Per-job `overrides` from an experiment YAML
+2. Base YAML values referenced by top-level `base:`
+3. Job YAML values
+4. CLI overrides passed to `python -m signdata run`
+5. Per-job `overrides` from an experiment YAML
 
 ## Minimal Working Config
 
@@ -118,11 +120,14 @@ If omitted, the loader derives these defaults from `paths.root`:
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `video_ids_file` | `str` | `""` | Video ID list for YouTube-style datasets |
-| `languages` | `list[str]` | `["en"]` | Transcript language codes |
+| `languages` | `list[str]` | adapter defaults | Transcript language codes |
 | `availability_policy` | `str` | `"drop_unavailable"` | Video availability handling policy for YouTube-ASL |
-| `download_format` | `str` | `"worstvideo[height>=720]..."` | yt-dlp format selector |
+| `download_format` | `str` | `"worstvideo[...]+worstaudio/.../best"` | yt-dlp format selector |
 | `rate_limit` | `str` | `"5M"` | Download rate limit |
 | `concurrent_fragments` | `int` | `5` | Parallel download fragments |
+| `transcript_proxy_http` | `str` | `null` | Optional HTTP proxy for `youtube-transcript-api` |
+| `transcript_proxy_https` | `str` | `null` | Optional HTTPS proxy for `youtube-transcript-api` |
+| `stop_on_transcript_block` | `bool` | `true` | Stop transcript downloading after `RequestBlocked`/`IpBlocked` |
 | `max_text_length` | `int` | `300` | Max caption length |
 | `min_duration` | `float` | `0.2` | Min segment duration |
 | `max_duration` | `float` | `60.0` | Max segment duration |

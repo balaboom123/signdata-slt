@@ -8,6 +8,8 @@ import yaml
 
 from signdata.config.loader import (
     _parse_value,
+    _load_raw_config,
+    _resolve_base_config_paths,
     _set_nested,
     deep_merge,
     load_config,
@@ -184,6 +186,22 @@ class TestResolvePaths:
         project_root = Path("/proj")
         cfg = resolve_paths(cfg, project_root)
         assert Path(cfg.dataset.source["video_ids_file"]).as_posix() == "/abs/ids.txt"
+
+    def test_windows_absolute_paths_are_normalized(self):
+        cfg = Config(
+            dataset={
+                "name": "test",
+                "source": {"video_ids_file": r"C:\assets\ids.txt"},
+            },
+            paths={"root": r"D:\dataset\test"},
+        )
+        project_root = Path("/proj")
+        cfg = resolve_paths(cfg, project_root)
+
+        assert cfg.paths.root == str(Path("/mnt/d/dataset/test"))
+        assert cfg.paths.videos == str(Path("/mnt/d/dataset/test/videos"))
+        assert cfg.paths.transcripts == str(Path("/mnt/d/dataset/test/transcripts"))
+        assert cfg.dataset.source["video_ids_file"] == str(Path("/mnt/c/assets/ids.txt"))
 
     def test_video_ids_file_empty_unchanged(self):
         cfg = Config(dataset={"name": "test"})
@@ -368,3 +386,114 @@ class TestLoadConfig:
         }))
         with pytest.raises(ValueError, match="Unknown dataset"):
             load_config(str(yaml_path))
+
+    def test_base_config_is_merged_before_validation(self, tmp_path):
+        import signdata.datasets
+
+        base_dir = tmp_path / "configs" / "base" / "datasets"
+        base_dir.mkdir(parents=True)
+        base_path = base_dir / "youtube_asl.yaml"
+        base_path.write_text(yaml.dump({
+            "dataset": {
+                "name": "youtube_asl",
+                "source": {"video_ids_file": "assets/ids.txt"},
+            },
+        }))
+
+        job_dir = tmp_path / "configs" / "jobs" / "youtube_asl"
+        job_dir.mkdir(parents=True)
+        yaml_path = job_dir / "video.yaml"
+        yaml_path.write_text(yaml.dump({
+            "base": "../../base/datasets/youtube_asl.yaml",
+            "processing": {
+                "enabled": True,
+                "processor": "video2crop",
+                "detection": "yolo",
+                "detection_config": {"model": "yolov8n.pt"},
+            },
+        }))
+
+        cfg = load_config(str(yaml_path))
+
+        assert cfg.dataset.name == "youtube_asl"
+        assert cfg.dataset.source["video_ids_file"] == str(
+            tmp_path / "assets" / "ids.txt"
+        )
+        assert cfg.processing.processor == "video2crop"
+
+    def test_base_config_dataset_shorthand_is_normalized_before_merge(self, tmp_path):
+        import signdata.datasets
+
+        base_dir = tmp_path / "configs" / "base" / "datasets"
+        base_dir.mkdir(parents=True)
+        base_path = base_dir / "youtube_asl.yaml"
+        base_path.write_text(yaml.dump({
+            "dataset": "youtube_asl",
+        }))
+
+        job_dir = tmp_path / "configs" / "jobs" / "youtube_asl"
+        job_dir.mkdir(parents=True)
+        yaml_path = job_dir / "video.yaml"
+        yaml_path.write_text(yaml.dump({
+            "base": "../../base/datasets/youtube_asl.yaml",
+            "dataset": {
+                "source": {"video_ids_file": "assets/ids.txt"},
+            },
+        }))
+
+        cfg = load_config(str(yaml_path))
+
+        assert cfg.dataset.name == "youtube_asl"
+        assert cfg.dataset.source["video_ids_file"] == str(
+            tmp_path / "assets" / "ids.txt"
+        )
+
+    @pytest.mark.parametrize("document", ["[]\n", "false\n", "0\n"])
+    def test_falsey_non_mapping_job_config_raises_mapping_error(
+        self, tmp_path, document
+    ):
+        yaml_path = tmp_path / "bad.yaml"
+        yaml_path.write_text(document)
+
+        with pytest.raises(ValueError, match="YAML mapping"):
+            load_config(str(yaml_path))
+
+    @pytest.mark.parametrize("document", ["[]\n", "false\n", "0\n"])
+    def test_falsey_non_mapping_base_config_raises_mapping_error(
+        self, tmp_path, document
+    ):
+        import signdata.datasets
+
+        base_path = tmp_path / "configs" / "base.yaml"
+        base_path.parent.mkdir(parents=True)
+        base_path.write_text(document)
+
+        job_path = tmp_path / "configs" / "jobs" / "job.yaml"
+        job_path.parent.mkdir(parents=True)
+        job_path.write_text(yaml.dump({
+            "base": "../base.yaml",
+            "dataset": {
+                "name": "youtube_asl",
+                "source": {"video_ids_file": "assets/ids.txt"},
+            },
+        }))
+
+        with pytest.raises(ValueError, match="YAML mapping"):
+            load_config(str(job_path))
+
+    def test_base_config_cycles_raise(self, tmp_path):
+        config_a = tmp_path / "a.yaml"
+        config_b = tmp_path / "b.yaml"
+        config_a.write_text(yaml.dump({"base": "b.yaml", "dataset": {"name": "x"}}))
+        config_b.write_text(yaml.dump({"base": "a.yaml", "dataset": {"name": "x"}}))
+
+        with pytest.raises(ValueError, match="Circular config base reference"):
+            _load_raw_config(str(config_a))
+
+    def test_windows_absolute_base_paths_resolve_without_config_dir_prefix(self, tmp_path):
+        config_path = tmp_path / "configs" / "jobs" / "job.yaml"
+        config_path.parent.mkdir(parents=True)
+
+        resolved = _resolve_base_config_paths(r"C:\shared\base.yaml", config_path)
+
+        assert resolved == [Path("/mnt/c/shared/base.yaml").resolve()]

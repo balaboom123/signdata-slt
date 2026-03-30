@@ -1,13 +1,10 @@
+base: ../../base/datasets/youtube_asl.yaml
+
 dataset:
-  name: youtube_asl
-  download: true
-  manifest: true
   source:
-    video_ids_file: assets/youtube-asl_youtube_asl_video_ids.txt
-    languages: [en, ase, en-US, en-CA, en-GB, en-AU]
-    download_format: "worstvideo[height>=720][fps>=23]/bestvideo[height>=480]"
-    rate_limit: "5M"
-    concurrent_fragments: 5
+    stop_on_transcript_block: true
+    # transcript_proxy_http: http://user:pass@host:port
+    # transcript_proxy_https: http://user:pass@host:port
     max_text_length: 300
     min_duration: 0.2
     max_duration: 60.0

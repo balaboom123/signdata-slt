@@ -10,6 +10,9 @@ Source config (parsed from ``config.dataset.source``):
     download_format: str           — yt-dlp format selector
     rate_limit: str                — download rate limit
     concurrent_fragments: int      — parallel download fragments
+    transcript_proxy_http: str     — optional HTTP proxy for transcript fetches
+    transcript_proxy_https: str    — optional HTTPS proxy for transcript fetches
+    stop_on_transcript_block: bool — stop transcript loop after IP blocking
     max_text_length: int           — max characters per segment
     min_duration: float            — min segment duration (seconds)
     max_duration: float            — max segment duration (seconds)
@@ -24,7 +27,7 @@ import time
 import logging
 from glob import glob
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 import pandas as pd
 from pydantic import BaseModel
@@ -42,15 +45,43 @@ from ..utils.text import TextProcessingConfig, normalize_text
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_TRANSCRIPT_LANGUAGES = [
+    "en",
+    "ase",
+    "en-US",
+    "en-CA",
+    "en-GB",
+    "en-AU",
+    "en-NZ",
+    "en-IN",
+    "en-ZA",
+    "en-IE",
+    "en-SG",
+    "en-PH",
+    "en-NG",
+    "en-PK",
+    "en-JM",
+]
+
+DEFAULT_DOWNLOAD_FORMAT = (
+    "worstvideo[height>=720][fps>=24]+worstaudio"
+    "/bestvideo[height>=480][height<720][fps>=24][fps<=60]+worstaudio"
+    "/bestvideo[height>=480][height<=1080][fps>=14]+worstaudio"
+    "/best"
+)
+
 
 class YouTubeASLSourceConfig(BaseModel):
     """Typed config for YouTube-ASL adapter."""
     video_ids_file: str = ""
-    languages: List[str] = ["en"]
+    languages: List[str] = DEFAULT_TRANSCRIPT_LANGUAGES.copy()
     availability_policy: AvailabilityPolicy = "drop_unavailable"
-    download_format: str = "worstvideo[height>=720][fps>=24]/bestvideo[height>=480]"
+    download_format: str = DEFAULT_DOWNLOAD_FORMAT
     rate_limit: str = "5M"
     concurrent_fragments: int = 5
+    transcript_proxy_http: Optional[str] = None
+    transcript_proxy_https: Optional[str] = None
+    stop_on_transcript_block: bool = True
     max_text_length: int = 300
     min_duration: float = 0.2
     max_duration: float = 60.0
@@ -96,7 +127,7 @@ class YouTubeASLDataset(DatasetAdapter):
         # Download transcripts
         self.logger.info("Starting transcript download...")
         transcript_stats = self._download_transcripts(
-            source.video_ids_file, transcript_dir, source.languages
+            source.video_ids_file, transcript_dir, source
         )
 
         # Download videos
@@ -128,47 +159,74 @@ class YouTubeASLDataset(DatasetAdapter):
         self,
         video_id_file: str,
         transcript_dir: str,
-        languages: List[str],
+        source: YouTubeASLSourceConfig,
     ) -> Dict:
         from youtube_transcript_api import YouTubeTranscriptApi
         from youtube_transcript_api._errors import (
+            IpBlocked,
             TranscriptsDisabled,
             NoTranscriptFound,
+            RequestBlocked,
             VideoUnavailable,
         )
-        from youtube_transcript_api.formatters import JSONFormatter
-
         existing_ids = _get_existing_ids(transcript_dir, "json")
         all_ids = _load_video_ids(video_id_file)
-        ids = list(all_ids - existing_ids)
+        ids = sorted(all_ids - existing_ids)
 
         if not ids:
             self.logger.info("All transcripts already downloaded.")
-            return {"total": len(all_ids), "downloaded": 0, "errors": 0}
+            return {
+                "total": len(all_ids),
+                "attempted": 0,
+                "downloaded": 0,
+                "errors": 0,
+                "blocked": False,
+            }
 
-        formatter = JSONFormatter()
         sleep_time = 0.2
         error_count = 0
         downloaded = 0
+        blocked = False
+        proxies = self._build_transcript_proxies(source)
+        transcript_client = self._build_transcript_client(source)
 
         with tqdm(ids, desc="Downloading transcripts") as pbar:
             for video_id in pbar:
                 sleep_time = min(sleep_time, 2)
                 time.sleep(sleep_time)
                 try:
-                    transcript = YouTubeTranscriptApi.get_transcript(
-                        video_id, languages=languages
+                    transcript = self._fetch_transcript(
+                        transcript_client=transcript_client,
+                        transcript_api_cls=YouTubeTranscriptApi,
+                        video_id=video_id,
+                        languages=source.languages,
+                        proxies=proxies,
                     )
-                    json_transcript = formatter.format_transcript(transcript)
+                    transcript = self._normalize_transcript_payload(transcript)
                     path = os.path.join(transcript_dir, f"{video_id}.json")
                     with open(path, "w", encoding="utf-8") as f:
-                        f.write(json_transcript)
+                        f.write(json.dumps(transcript))
                     downloaded += 1
                 except (TranscriptsDisabled, NoTranscriptFound, VideoUnavailable) as e:
                     self.logger.warning(
                         "Transcript unavailable for %s: %s", video_id, e
                     )
                     error_count += 1
+                except (RequestBlocked, IpBlocked) as e:
+                    error_count += 1
+                    blocked = True
+                    self.logger.error(
+                        "Transcript download blocked for %s: %s", video_id, e
+                    )
+                    if source.stop_on_transcript_block:
+                        self.logger.error(
+                            "Stopping transcript download early after an IP block. "
+                            "Set dataset.source.transcript_proxy_http / "
+                            "dataset.source.transcript_proxy_https or use a rotating "
+                            "residential proxy to continue."
+                        )
+                        pbar.set_postfix(errors=error_count, blocked=1)
+                        break
                 except Exception as e:
                     sleep_time += 0.1
                     self.logger.error(
@@ -177,7 +235,89 @@ class YouTubeASLDataset(DatasetAdapter):
                     error_count += 1
                 pbar.set_postfix(errors=error_count)
 
-        return {"total": len(all_ids), "downloaded": downloaded, "errors": error_count}
+        return {
+            "total": len(all_ids),
+            "attempted": downloaded + error_count,
+            "downloaded": downloaded,
+            "errors": error_count,
+            "blocked": blocked,
+        }
+
+    @staticmethod
+    def _build_transcript_proxies(
+        source: YouTubeASLSourceConfig,
+    ) -> Optional[Dict[str, str]]:
+        if not source.transcript_proxy_http and not source.transcript_proxy_https:
+            return None
+
+        return {
+            "http": source.transcript_proxy_http or source.transcript_proxy_https,
+            "https": source.transcript_proxy_https or source.transcript_proxy_http,
+        }
+
+    @staticmethod
+    def _build_transcript_client(source: YouTubeASLSourceConfig) -> Optional[Any]:
+        from youtube_transcript_api import YouTubeTranscriptApi
+
+        proxy_config = None
+        if source.transcript_proxy_http or source.transcript_proxy_https:
+            from youtube_transcript_api.proxies import GenericProxyConfig
+
+            proxy_config = GenericProxyConfig(
+                http_url=source.transcript_proxy_http,
+                https_url=source.transcript_proxy_https,
+            )
+
+        try:
+            return YouTubeTranscriptApi(proxy_config=proxy_config)
+        except TypeError:
+            if proxy_config is not None:
+                return None
+
+        try:
+            return YouTubeTranscriptApi()
+        except TypeError:
+            return None
+
+    @staticmethod
+    def _fetch_transcript(
+        transcript_client: Optional[Any],
+        transcript_api_cls: Any,
+        video_id: str,
+        languages: List[str],
+        proxies: Optional[Dict[str, str]] = None,
+    ) -> Any:
+        if transcript_client is not None:
+            if hasattr(transcript_client, "fetch"):
+                return transcript_client.fetch(video_id, languages=languages)
+            if hasattr(transcript_client, "list"):
+                return transcript_client.list(video_id).find_transcript(
+                    languages
+                ).fetch()
+
+        if hasattr(transcript_api_cls, "list_transcripts"):
+            return transcript_api_cls.list_transcripts(
+                video_id, proxies=proxies
+            ).find_transcript(languages).fetch()
+
+        kwargs: Dict[str, Any] = {"languages": languages}
+        if proxies is not None:
+            kwargs["proxies"] = proxies
+        return transcript_api_cls.get_transcript(video_id, **kwargs)
+
+    @staticmethod
+    def _normalize_transcript_payload(transcript: Any) -> List[Dict]:
+        if hasattr(transcript, "to_raw_data"):
+            transcript = transcript.to_raw_data()
+
+        if isinstance(transcript, list):
+            return transcript
+
+        raise TypeError(
+            "Unexpected transcript payload type "
+            f"{type(transcript).__name__}; expected a list or object with "
+            "to_raw_data()."
+        )
 
     def _download_videos(
         self, video_id_file: str, video_dir: str, source: YouTubeASLSourceConfig

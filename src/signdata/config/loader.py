@@ -3,7 +3,7 @@
 import copy
 import os
 import warnings
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Dict, List, Optional
 
 import yaml
@@ -23,9 +23,98 @@ def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]
     return result
 
 
-def _is_absolute(path_str: str) -> bool:
-    """Check if a path string is absolute, handling both Windows and POSIX styles."""
-    return Path(path_str).is_absolute() or path_str.startswith("/")
+def _normalize_dataset_shorthand(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Expand dataset shorthand so nested merges preserve dataset.name."""
+    dataset = raw.get("dataset")
+    if isinstance(dataset, str):
+        raw["dataset"] = {"name": dataset}
+    return raw
+
+
+def _load_yaml_mapping(yaml_path: str) -> Dict[str, Any]:
+    """Load a YAML file and require a mapping at the top level."""
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        raw = yaml.safe_load(f)
+
+    if raw is None:
+        return {}
+
+    if not isinstance(raw, dict):
+        raise ValueError(f"Config file must contain a YAML mapping: {yaml_path}")
+
+    return _normalize_dataset_shorthand(raw)
+
+
+def _resolve_base_config_paths(base_ref: Any, config_path: Path) -> List[Path]:
+    """Resolve one or more base-config paths relative to the current config."""
+    if isinstance(base_ref, str):
+        refs = [base_ref]
+    elif isinstance(base_ref, list) and all(isinstance(item, str) for item in base_ref):
+        refs = base_ref
+    else:
+        raise ValueError(
+            f"'base' must be a string or list[str] in config: {config_path}"
+        )
+
+    resolved: List[Path] = []
+    for ref in refs:
+        resolved.append(_resolve_path(ref, config_path.parent).resolve())
+    return resolved
+
+
+def _load_raw_config(
+    yaml_path: str,
+    stack: Optional[List[Path]] = None,
+) -> Dict[str, Any]:
+    """Load a YAML config with optional recursive base-config merging."""
+    config_path = _coerce_path(yaml_path)
+    if not config_path.is_absolute():
+        config_path = Path(os.path.abspath(str(config_path)))
+    config_path = config_path.resolve()
+    stack = stack or []
+
+    if config_path in stack:
+        chain = " -> ".join(str(path) for path in stack + [config_path])
+        raise ValueError(f"Circular config base reference detected: {chain}")
+
+    raw = _load_yaml_mapping(str(config_path))
+    base_ref = raw.pop("base", None)
+    if base_ref is None:
+        return raw
+
+    merged: Dict[str, Any] = {}
+    for base_path in _resolve_base_config_paths(base_ref, config_path):
+        merged = deep_merge(
+            merged,
+            _load_raw_config(str(base_path), stack + [config_path]),
+        )
+
+    return deep_merge(merged, raw)
+
+
+def _coerce_path(path_str: str) -> Path:
+    """Convert config path strings into paths on the current platform."""
+    path = Path(path_str)
+    if path.is_absolute():
+        return path
+
+    windows_path = PureWindowsPath(path_str)
+    if windows_path.is_absolute():
+        if windows_path.drive.endswith(":"):
+            drive = windows_path.drive[:-1].lower()
+            return Path("/mnt", drive, *windows_path.parts[1:])
+        return Path(str(windows_path).replace("\\", "/"))
+
+    if "\\" in path_str:
+        return Path(*windows_path.parts)
+
+    return path
+
+
+def _resolve_path(path_str: str, root: Path) -> Path:
+    """Resolve a config path against a root after normalizing separators."""
+    path = _coerce_path(path_str)
+    return path if path.is_absolute() else root / path
 
 
 PACKAGE_DIR_ALIASES = ("signdata", "sltpipe", "sign_prep")
@@ -111,7 +200,7 @@ def _alternate_legacy_model_checkpoints(
 
 def _resolve_model_path(path_str: str, project_root: Path, attr_name: str) -> str:
     """Resolve model paths relative to project root with migration fallbacks."""
-    resolved = Path(path_str) if _is_absolute(path_str) else project_root / path_str
+    resolved = _resolve_path(path_str, project_root)
     alternate_paths = _alternate_package_dirs(resolved)
     alternate_paths.extend(
         _alternate_resource_model_configs(resolved, project_root, attr_name)
@@ -146,44 +235,42 @@ def resolve_paths(config: Config, project_root: Path) -> Config:
     if not paths.root:
         paths.root = str(project_root / "dataset" / dataset_name)
 
-    root = Path(paths.root)
-    if not _is_absolute(paths.root):
-        root = project_root / root
-        paths.root = str(root)
+    root = _resolve_path(paths.root, project_root)
+    paths.root = str(root)
 
     run_name = config.run_name
 
     if not paths.videos:
         paths.videos = str(root / "videos")
-    elif not _is_absolute(paths.videos):
-        paths.videos = str(project_root / paths.videos)
+    else:
+        paths.videos = str(_resolve_path(paths.videos, project_root))
 
     if not paths.transcripts:
         paths.transcripts = str(root / "transcripts")
-    elif not _is_absolute(paths.transcripts):
-        paths.transcripts = str(project_root / paths.transcripts)
+    else:
+        paths.transcripts = str(_resolve_path(paths.transcripts, project_root))
 
     if not paths.manifest:
         paths.manifest = str(root / "manifest.csv")
-    elif not _is_absolute(paths.manifest):
-        paths.manifest = str(project_root / paths.manifest)
+    else:
+        paths.manifest = str(_resolve_path(paths.manifest, project_root))
 
     if not paths.output:
         paths.output = str(root / "output")
-    elif not _is_absolute(paths.output):
-        paths.output = str(project_root / paths.output)
+    else:
+        paths.output = str(_resolve_path(paths.output, project_root))
 
     if not paths.webdataset:
         paths.webdataset = str(root / "webdataset")
-    elif not _is_absolute(paths.webdataset):
-        paths.webdataset = str(project_root / paths.webdataset)
+    else:
+        paths.webdataset = str(_resolve_path(paths.webdataset, project_root))
 
     # Resolve source paths relative to project root
     source = config.dataset.source
     for source_key in ("video_ids_file", "manifest_tsv", "manifest_csv"):
         val = source.get(source_key, "")
-        if val and not _is_absolute(val):
-            config.dataset.source[source_key] = str(project_root / val)
+        if val:
+            config.dataset.source[source_key] = str(_resolve_path(val, project_root))
 
     # Resolve model paths in detection_config and pose_config
     proc = config.processing
@@ -217,17 +304,19 @@ def load_config(
 
     Merge order (later overrides earlier):
     1. Pydantic defaults (hardcoded in schema)
-    2. YAML config file
-    3. CLI overrides (key=value pairs)
-    4. Dict overrides (from experiment layer, already typed)
+    2. Base YAML(s), if declared via top-level ``base:``
+    3. YAML config file
+    4. CLI overrides (key=value pairs)
+    5. Dict overrides (from experiment layer, already typed)
     """
-    yaml_path = os.path.abspath(yaml_path)
-    config_dir = Path(yaml_path).parent
+    config_path = _coerce_path(yaml_path)
+    if not config_path.is_absolute():
+        config_path = Path(os.path.abspath(str(config_path)))
+    config_path = config_path.resolve()
+    config_dir = config_path.parent
 
     project_root = _find_project_root(config_dir)
-
-    with open(yaml_path, "r") as f:
-        raw = yaml.safe_load(f) or {}
+    raw = _load_raw_config(str(config_path))
 
     # Apply CLI overrides
     if overrides:
@@ -246,18 +335,20 @@ def load_config(
             key, value = _normalize_legacy_sampling_override(key, value)
             _set_nested(raw, key, value)
 
+    raw = _normalize_dataset_shorthand(raw)
+
     # Validate required fields
     dataset_raw = raw.get("dataset")
     if not dataset_raw:
         raise ValueError("Config must specify 'dataset' field")
 
-    dataset_name = dataset_raw if isinstance(dataset_raw, str) else dataset_raw.get("name")
+    dataset_name = (
+        dataset_raw if isinstance(dataset_raw, str)
+        else dataset_raw.get("name") if isinstance(dataset_raw, dict)
+        else None
+    )
     if not dataset_name:
         raise ValueError("Config must specify 'dataset.name' field")
-
-    # Support shorthand: dataset: "name" -> dataset: {name: "name"}
-    if isinstance(raw.get("dataset"), str):
-        raw["dataset"] = {"name": raw["dataset"]}
 
     if dataset_name not in DATASET_REGISTRY:
         raise ValueError(
