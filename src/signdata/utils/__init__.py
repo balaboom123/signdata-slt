@@ -1,9 +1,12 @@
-"""Shared utilities."""
+"""Shared utilities for the processing pipeline.
+
+Dataset-ingestion helpers (download, class maps, frame materialisation,
+availability checks) live in ``signdata.datasets._shared``.
+"""
 
 from .video import (
     FPSSampler,
     validate_video_file,
-    get_video_fps,
     resolve_effective_sample_fps,
 )
 from .files import get_video_filenames, get_filenames
@@ -23,17 +26,13 @@ from .manifest import (
     ALL_KNOWN_COLUMNS,
 )
 from .availability import (
-    get_existing_video_ids,
-    apply_availability_policy,
     filter_available,
-    write_acquire_report,
     AvailabilityPolicy,
 )
 
 __all__ = [
     "FPSSampler",
     "validate_video_file",
-    "get_video_fps",
     "resolve_effective_sample_fps",
     "get_video_filenames",
     "get_filenames",
@@ -50,9 +49,6 @@ __all__ = [
     "SPATIAL_COLUMNS",
     "METADATA_COLUMNS",
     "ALL_KNOWN_COLUMNS",
-    "get_existing_video_ids",
-    "apply_availability_policy",
     "filter_available",
-    "write_acquire_report",
     "AvailabilityPolicy",
 ]

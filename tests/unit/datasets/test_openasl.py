@@ -22,7 +22,7 @@ from signdata.config.schema import Config
 from signdata.datasets.openasl import OpenASLDataset, OpenASLSourceConfig
 from signdata.pipeline.context import PipelineContext
 from signdata.registry import DATASET_REGISTRY
-from signdata.utils.availability import get_existing_video_ids
+from signdata.datasets._shared.availability import get_existing_video_ids
 
 
 # ── Registration ──────────────────────────────────────────────────────────

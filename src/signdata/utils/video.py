@@ -1,9 +1,16 @@
-"""Video processing utilities."""
+"""Video processing utilities for the pipeline.
 
+Duration/FPS probing for dataset ingestion has moved to
+``signdata.datasets._shared.media``.
+"""
+
+import logging
 import os
 from typing import Optional
 
 import cv2
+
+logger = logging.getLogger(__name__)
 
 
 def validate_video_file(video_path: str) -> bool:
@@ -17,19 +24,6 @@ def validate_video_file(video_path: str) -> bool:
         return is_valid
     except Exception:
         return False
-
-
-def get_video_fps(video_path: str) -> float:
-    """Return video FPS (frames per second) as float."""
-    try:
-        video_capture = cv2.VideoCapture(video_path)
-        if not video_capture.isOpened():
-            return 0.0
-        fps = video_capture.get(cv2.CAP_PROP_FPS) or 0.0
-        video_capture.release()
-        return float(fps)
-    except Exception:
-        return 0.0
 
 
 def resolve_effective_sample_fps(

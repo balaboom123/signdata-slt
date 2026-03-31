@@ -13,12 +13,12 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from signdata.utils.availability import (
+from signdata.datasets._shared.availability import (
     apply_availability_policy,
-    filter_available,
     get_existing_video_ids,
     write_acquire_report,
 )
+from signdata.utils.availability import filter_available
 
 
 # ── get_existing_video_ids ─────────────────────────────────────────────

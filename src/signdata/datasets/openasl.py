@@ -17,22 +17,21 @@ Source config (parsed from ``config.dataset.source``):
 import json
 import logging
 import os
-import time
 from pathlib import Path
 from typing import Dict, List
 
 import pandas as pd
 from pydantic import BaseModel
-from tqdm import tqdm
 
 from .base import DatasetAdapter
 from ..registry import register_dataset
-from ..utils.availability import (
+from ._shared.availability import (
     AvailabilityPolicy,
     apply_availability_policy,
     get_existing_video_ids,
     write_acquire_report,
 )
+from ._shared.youtube import download_youtube_videos
 from ..utils.text import TextProcessingConfig, normalize_text
 
 logger = logging.getLogger(__name__)
@@ -144,66 +143,14 @@ class OpenASLDataset(DatasetAdapter):
         video_dir: str,
         source: OpenASLSourceConfig,
     ) -> Dict:
-        from yt_dlp import YoutubeDL
-        from yt_dlp.utils import (
-            DownloadError,
-            ExtractorError,
-            PostProcessingError,
-            UnavailableVideoError,
+        return download_youtube_videos(
+            video_ids,
+            video_dir,
+            download_format=source.download_format,
+            rate_limit=source.rate_limit,
+            concurrent_fragments=source.concurrent_fragments,
+            log=self.logger,
         )
-
-        yt_config = {
-            "format": source.download_format,
-            "merge_output_format": "mp4",
-            "postprocessors": [
-                {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"},
-            ],
-            "writesubtitles": False,
-            "outtmpl": os.path.join(video_dir, "%(id)s.%(ext)s"),
-            "nocheckcertificate": True,
-            "geo-bypass": True,
-            "limit_rate": source.rate_limit,
-            "http-chunk-size": 10485760,
-            "noplaylist": True,
-            "no-metadata-json": True,
-            "no-metadata": True,
-            "concurrent-fragments": source.concurrent_fragments,
-            "hls-prefer-ffmpeg": True,
-            "sleep-interval": 0,
-        }
-
-        error_count = 0
-        downloaded = 0
-        missing: List[Dict] = []
-
-        with tqdm(video_ids, desc="Downloading videos", unit="video") as pbar:
-            for yid in pbar:
-                time.sleep(0.2)
-                url = f"https://www.youtube.com/watch?v={yid}"
-                try:
-                    with YoutubeDL(yt_config) as yt:
-                        yt.extract_info(url)
-                    downloaded += 1
-                except (
-                    DownloadError,
-                    ExtractorError,
-                    PostProcessingError,
-                    UnavailableVideoError,
-                ) as e:
-                    self.logger.error("Error downloading %s: %s", yid, e)
-                    missing.append({"VIDEO_ID": yid, "REASON": str(e)})
-                    error_count += 1
-                except Exception as e:
-                    self.logger.error("Unexpected error for %s: %s", yid, e)
-                    missing.append({"VIDEO_ID": yid, "REASON": str(e)})
-                    error_count += 1
-                pbar.set_postfix(errors=error_count)
-
-        return {
-            "downloaded": downloaded,
-            "errors": error_count,
-            "missing": missing,
-        }
 
     def build_manifest(self, config, context):
         """Build canonical manifest from OpenASL TSV."""

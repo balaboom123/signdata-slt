@@ -1,0 +1,48 @@
+"""RWTH-PHOENIX-Weather 2014-T dataset adapter."""
+
+from pathlib import Path
+
+from ..base import DatasetAdapter
+from ...registry import register_dataset
+from . import manifest as _manifest
+from . import source as _source
+
+
+@register_dataset("rwth_phoenix_weather")
+class RWTHPhoenixWeatherDataset(DatasetAdapter):
+    """RWTH-PHOENIX-Weather 2014-T dataset adapter."""
+
+    name = "rwth_phoenix_weather"
+
+    @classmethod
+    def validate_config(cls, config) -> None:
+        source = config.dataset.source
+        release_dir = source.get("release_dir", "") or getattr(config.paths, "videos", "")
+        if not release_dir:
+            raise ValueError(
+                "rwth_phoenix_weather requires either "
+                "dataset.source.release_dir or paths.videos pointing to the "
+                "unpacked PHOENIX release directory."
+            )
+
+    def download(self, config, context):
+        source = _source.get_source_config(config)
+        stats = _source.prepare(source, config, self.logger)
+        context.stats["dataset.download"] = stats
+        return context
+
+    def build_manifest(self, config, context):
+        source = _source.get_source_config(config)
+        df = _manifest.build(config, source, self.logger)
+        context.manifest_path = Path(config.paths.manifest)
+        context.manifest_df = df
+        context.stats["dataset.manifest"] = {
+            "videos": int(df["VIDEO_ID"].nunique()),
+            "segments": len(df),
+            "splits": list(df["SPLIT"].unique()) if "SPLIT" in df.columns else [],
+        }
+        self.logger.info(
+            "PHOENIX manifest built: %d segments, %d videos -> %s",
+            len(df), df["VIDEO_ID"].nunique(), config.paths.manifest,
+        )
+        return context
