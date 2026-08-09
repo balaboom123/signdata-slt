@@ -89,27 +89,31 @@ configs/
 
 ## Top-Level Fields
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `dataset` | `DatasetConfig` | none | Dataset adapter settings |
-| `processing` | `ProcessingConfig` | disabled | Main processor selection and backend configs |
-| `post_processing` | `PostProcessingConfig` | disabled | Optional landmark normalization |
-| `output` | `OutputConfig` | `webdataset` | Output writer settings |
-| `run_name` | `str` | `"default"` | Run namespace appended under `paths.output` and `paths.webdataset` |
-| `paths` | `PathsConfig` | empty strings | Artifact root paths, resolved relative to the project root |
+<!-- BEGIN GENERATED: config -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `dataset` | `DatasetConfig` | `required` | — | Dataset adapter settings. |
+| `processing` | `ProcessingConfig` | `ProcessingConfig(enabled=false)` | — | Main processor selection and backend settings. |
+| `post_processing` | `PostProcessingConfig` | `PostProcessingConfig()` | — | Optional landmark post-processing settings. |
+| `output` | `OutputConfig` | `OutputConfig()` | — | WebDataset output settings. |
+| `run_name` | `str` | `"default"` | — | Namespace appended to output and webdataset paths. |
+| `paths` | `PathsConfig` | `PathsConfig()` | — | Resolved dataset and artifact paths. |
+<!-- END GENERATED: config -->
 
 ## `paths`
 
 All relative paths are resolved from the project root.
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `root` | `str` | `""` | Dataset root directory |
-| `videos` | `str` | `""` | Source videos |
-| `transcripts` | `str` | `""` | Transcript JSON files |
-| `manifest` | `str` | `""` | Base manifest TSV/CSV path |
-| `output` | `str` | `""` | Base processing output directory; run outputs land in `{paths.output}/{run_name}` |
-| `webdataset` | `str` | `""` | Base shard directory; shards land in `{paths.webdataset}/{run_name}` |
+<!-- BEGIN GENERATED: paths -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `root` | `str` | `""` | — | Dataset root used to derive omitted paths. |
+| `videos` | `str` | `""` | — | Source video directory. |
+| `transcripts` | `str` | `""` | — | Transcript JSON directory. |
+| `manifest` | `str` | `""` | — | Manifest TSV path. |
+| `output` | `str` | `""` | — | Base processor artifact directory. |
+| `webdataset` | `str` | `""` | — | Base WebDataset shard directory. |
+<!-- END GENERATED: paths -->
 
 If omitted, the loader derives these defaults from `paths.root`:
 
@@ -121,12 +125,14 @@ If omitted, the loader derives these defaults from `paths.root`:
 
 ## `dataset`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `name` | `str` | none | Dataset name registered in `DATASET_REGISTRY` |
-| `download` | `bool` | `true` | Run `dataset.download` |
-| `manifest` | `bool` | `true` | Run `dataset.manifest`; if false, the runner loads `paths.manifest` directly |
-| `source` | `dict` | `{}` | Dataset-specific source settings |
+<!-- BEGIN GENERATED: dataset -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `name` | `str` | `required` | — | Dataset name registered in DATASET_REGISTRY. |
+| `download` | `bool` | `true` | — | Run the dataset download or local-validation stage. |
+| `manifest` | `bool` | `true` | — | Build a manifest; false loads paths.manifest when set. |
+| `source` | `dict[str, Any]` | `{}` | — | Adapter-specific source settings. |
+<!-- END GENERATED: dataset -->
 
 ## `dataset.source`
 
@@ -186,18 +192,20 @@ Relative file paths in `dataset.source`, such as `video_ids_file`,
 
 ## `processing`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `enabled` | `bool` | `true` | Run the processing stage |
-| `processor` | `"video2pose"` \| `"video2crop"` \| `"video2compression"` \| `"video2parts"` | `"video2pose"` | Main processor |
-| `detection` | `"yolo"` \| `"mediapipe"` \| `"mmdet"` \| `"null"` | `"null"` | Detection backend |
-| `pose` | `"mediapipe"` \| `"mmpose"` \| `null` | `null` | Pose backend; required for `video2pose` and `video2parts` |
-| `sample_rate` | `float?` | `0.5` | `null` = native FPS, `0 < value < 1` = keep ratio, `value >= 1` = absolute FPS |
-| `max_workers` | `int` | `1` | Worker count used by post-processing |
-| `detection_config` | backend-specific model | `null` | Required for non-`null` detection backends |
-| `pose_config` | backend-specific model | `null` | Required for `video2pose` and `video2parts` |
-| `video_config` | `VideoProcessingConfig?` | auto-created for `video2crop` | Crop/output settings for `video2crop` |
-| `parts_config` | `PartsProcessingConfig?` | auto-created for `video2parts` | SignMusketeers-style part stream settings |
+<!-- BEGIN GENERATED: processing -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `enabled` | `bool` | `true` | — | Run the selected processing stage. |
+| `processor` | `"video2pose" \| "video2crop" \| "video2compression" \| "video2parts"` | `"video2pose"` | — | Main processor implementation. |
+| `detection` | `"yolo" \| "mediapipe" \| "mmdet" \| "null"` | `"null"` | — | Person detection backend. |
+| `pose` | `"mediapipe" \| "mmpose" \| null` | `null` | — | Pose backend required by video2pose and video2parts. |
+| `sample_rate` | `float \| null` | `0.5` | — | Frame sampling mode: null native, fraction ratio, or absolute FPS. |
+| `max_workers` | `int` | `1` | > 0 | Worker count used by post-processing and compression. |
+| `detection_config` | `YOLODetectionConfig \| MMDetDetectionConfig \| MediaPipeDetectionConfig \| dict \| null` | `null` | — | Configuration for the selected detection backend. |
+| `pose_config` | `MediaPipePoseConfig \| MMPosePoseConfig \| dict \| null` | `null` | — | Configuration for the selected pose backend. |
+| `video_config` | `VideoProcessingConfig \| null` | `null` | — | Video crop or compression settings. |
+| `parts_config` | `PartsProcessingConfig \| dict \| null` | `null` | — | Face, hand, and body-stream settings for video2parts. |
+<!-- END GENERATED: processing -->
 
 `video2pose` requires both `processing.pose` and `processing.pose_config`.
 `video2parts` requires `processing.pose: mediapipe` and `processing.pose_config`.
@@ -235,62 +243,78 @@ source FPS. It does not upsample or invent frames.
 
 ### YOLO
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `model` | `str` | `"yolov8n.pt"` | YOLO model id or path |
-| `device` | `str` | `"cpu"` | Inference device |
-| `confidence_threshold` | `float` | `0.5` | Detection threshold |
-| `min_bbox_area` | `float` | `0.05` | Minimum normalized bbox area |
+<!-- BEGIN GENERATED: processing.detection_config.yolo -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `model` | `str` | `"yolo11m.pt"` | — | YOLO model alias or local weights path. |
+| `device` | `str` | `"cpu"` | — | Ultralytics inference device, for example cpu or cuda:0. |
+| `confidence_threshold` | `float` | `0.5` | — | Minimum person detection confidence. |
+| `min_bbox_area` | `float` | `0.05` | — | Minimum detection box area as a fraction of frame area. |
+| `batch_size` | `int` | `16` | > 0 | Frames per detector inference batch. |
+| `allow_download` | `bool` | `true` | — | Allow download of missing official YOLO weights. |
+| `weights_dir` | `str \| null` | `null` | — | Optional directory used to resolve local YOLO weights. |
+<!-- END GENERATED: processing.detection_config.yolo -->
 
 ### MMDet
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `det_model_config` | `str` | none | Detector config path |
-| `det_model_checkpoint` | `str` | none | Detector checkpoint path |
-| `device` | `str` | `"cuda:0"` | Inference device |
+<!-- BEGIN GENERATED: processing.detection_config.mmdet -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `det_model_config` | `str` | `required` | — | MMDetection model config path. |
+| `det_model_checkpoint` | `str` | `required` | — | MMDetection checkpoint path or URL. |
+| `device` | `str` | `"cuda:0"` | — | MMDetection inference device. |
+| `batch_size` | `int` | `16` | > 0 | Frames per detector inference batch. |
+<!-- END GENERATED: processing.detection_config.mmdet -->
 
 ### MediaPipe
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `min_detection_confidence` | `float` | `0.5` | Detection threshold |
+<!-- BEGIN GENERATED: processing.detection_config.mediapipe -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `min_detection_confidence` | `float` | `0.5` | — | Minimum MediaPipe person detection confidence. |
+<!-- END GENERATED: processing.detection_config.mediapipe -->
 
 ## `processing.pose_config`
 
 ### MediaPipe
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `model_complexity` | `int` | `1` | MediaPipe model complexity |
-| `min_detection_confidence` | `float` | `0.5` | Initial detection threshold |
-| `min_tracking_confidence` | `float` | `0.5` | Tracking threshold |
-| `refine_face_landmarks` | `bool` | `true` | Use refined face landmarks |
-| `batch_size` | `int` | `16` | Frames per inference batch |
+<!-- BEGIN GENERATED: processing.pose_config.mediapipe -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `model_complexity` | `int` | `1` | — | MediaPipe Holistic model complexity. |
+| `min_detection_confidence` | `float` | `0.5` | — | Minimum initial landmark detection confidence. |
+| `min_tracking_confidence` | `float` | `0.5` | — | Minimum landmark tracking confidence. |
+| `refine_face_landmarks` | `bool` | `true` | — | Enable refined face landmarks, producing 553 total points. |
+| `batch_size` | `int` | `16` | — | Frames passed to the pose backend per pipeline batch. |
+<!-- END GENERATED: processing.pose_config.mediapipe -->
 
 ### MMPose
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `pose_model_config` | `str` | none | Pose model config path or `mmpose::...` package resource |
-| `pose_model_checkpoint` | `str` | none | Pose checkpoint path or URL |
-| `device` | `str` | `"cuda:0"` | Inference device |
-| `batch_size` | `int` | `16` | Frames per inference batch |
+<!-- BEGIN GENERATED: processing.pose_config.mmpose -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `pose_model_config` | `str` | `required` | — | MMPose model config path or package resource. |
+| `pose_model_checkpoint` | `str` | `required` | — | MMPose checkpoint path or URL. |
+| `device` | `str` | `"cuda:0"` | — | MMPose inference device. |
+| `batch_size` | `int` | `16` | — | Frames passed to the pose backend per pipeline batch. |
+<!-- END GENERATED: processing.pose_config.mmpose -->
 
 ## `processing.video_config`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `codec` | `str` | `"libx264"` | ffmpeg video codec for cropped outputs |
-| `padding` | `float` | `0.0` | Extra crop padding around the detected bbox |
-| `resize` | `list[int]?` | `null` | Optional `[width, height]` resize after crop |
-| `crf` | `int` | `20` | Constant-quality factor; lower is higher quality and larger |
-| `preset` | `str` | `"medium"` | Encoder speed/efficiency preset, in the form the codec expects (see below) |
-| `aq_strength` | `int` | `8` | NVENC spatial/temporal adaptive-quantization strength (`1`–`15`) |
-| `nvenc_gpu` | `int?` | `null` | Physical NVIDIA GPU index for NVENC/NVDEC; `null` uses the FFmpeg default device |
-| `max_bitrate_ratio` | `float?` | `0.8` | Optional maximum output bitrate as a fraction of source bitrate |
-| `min_video_reduction_ratio` | `float` | `0.10` | Minimum required size reduction before keeping a compressed output |
-| `encoding_timeout_seconds` | `int` | `3600` | Per-video ffmpeg encoding timeout |
+<!-- BEGIN GENERATED: processing.video_config -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `codec` | `str` | `"libx264"` | — | FFmpeg encoder used for crop or compression output. |
+| `padding` | `float` | `0.0` | — | Fractional padding added around a detected crop box. |
+| `resize` | `list[int] \| null` | `null` | — | Optional output size as [width, height]; compression forbids resizing. |
+| `crf` | `int` | `20` | ≥ 0, ≤ 63 | Constant-quality value used by video compression; crop uses 15. |
+| `preset` | `str` | `"medium"` | — | Encoder speed/efficiency preset in codec-specific form. |
+| `aq_strength` | `int` | `8` | ≥ 1, ≤ 15 | NVENC spatial and temporal adaptive-quantization strength. |
+| `nvenc_gpu` | `int \| null` | `null` | ≥ 0 | Physical NVIDIA GPU index; null lets FFmpeg choose. |
+| `max_bitrate_ratio` | `float \| null` | `0.8` | > 0.0 | Maximum output bitrate as a fraction of source bitrate. |
+| `min_video_reduction_ratio` | `float` | `0.1` | ≥ 0.0, < 1.0 | Minimum size reduction required to keep a re-encode. |
+| `encoding_timeout_seconds` | `int` | `3600` | > 0 | Per-video FFmpeg encoding timeout in seconds. |
+<!-- END GENERATED: processing.video_config -->
 
 `preset` is validated against the codec at config load, because ffmpeg only
 rejects a mismatch once the encode starts:
@@ -321,41 +345,49 @@ CUDA 0, and a 0.52× source-bitrate ceiling.
 
 ## `processing.parts_config`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `crop_size` | `int` | `224` | Output size for face and hand crop streams |
-| `bbox_scale` | `float` | `1.2` | Scale factor applied to face/hand landmark boxes |
-| `codec` | `str` | `"mp4v"` | OpenCV fourcc used for part-stream MP4 files |
-| `missing_value` | `float` | `-1.0` | Fill value for missing body pose and bboxes |
+<!-- BEGIN GENERATED: processing.parts_config -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `crop_size` | `int` | `224` | > 0 | Square size in pixels for face and hand streams. |
+| `bbox_scale` | `float` | `1.2` | > 0 | Scale applied to face and hand landmark boxes. |
+| `codec` | `str` | `"mp4v"` | — | OpenCV FourCC used for part-stream MP4 files. |
+| `missing_value` | `float` | `-1.0` | — | Sentinel for missing body pose values and boxes. |
+<!-- END GENERATED: processing.parts_config -->
 
 ## `post_processing`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `enabled` | `bool` | `false` | Run landmark normalization |
-| `normalize` | `NormalizeConfig?` | `null` | Normalization settings |
+<!-- BEGIN GENERATED: post_processing -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `enabled` | `bool` | `false` | — | Run landmark post-processing. |
+| `normalize` | `NormalizeConfig \| null` | `null` | — | Landmark normalization settings. |
+<!-- END GENERATED: post_processing -->
 
 ## `post_processing.normalize`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `mode` | `str` | `"xy_isotropic_z_minmax"` | Normalization mode |
-| `remove_z` | `bool` | `false` | Drop z after normalization |
-| `select_keypoints` | `bool` | `true` | Reduce keypoints before flattening |
-| `keypoint_preset` | `str?` | `null` | Named preset from `signdata.processors.pose` |
-| `keypoint_indices` | `list[int]?` | `null` | Explicit keypoint indices |
-| `mask_empty_frames` | `bool` | `true` | Mask all-zero frames |
-| `mask_low_confidence` | `bool` | `false` | Mask low-visibility landmarks |
-| `visibility_threshold` | `float` | `0.3` | Visibility cutoff |
-| `missing_value` | `float` | `-999.0` | Fill value for masked data |
+<!-- BEGIN GENERATED: post_processing.normalize -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `mode` | `"isotropic_3d" \| "xy_isotropic_z_minmax"` | `"xy_isotropic_z_minmax"` | — | Coordinate normalization algorithm. |
+| `remove_z` | `bool` | `false` | — | Drop the z coordinate after normalization. |
+| `select_keypoints` | `bool` | `true` | — | Apply a preset or explicit keypoint selection before flattening. |
+| `keypoint_preset` | `str \| null` | `null` | — | Named built-in keypoint selection preset. |
+| `keypoint_indices` | `list[int] \| null` | `null` | — | Explicit keypoint indices used when no preset is selected. |
+| `mask_empty_frames` | `bool` | `true` | — | Replace all-zero frames with the missing-value sentinel. |
+| `mask_low_confidence` | `bool` | `false` | — | Mask landmarks below the visibility threshold. |
+| `visibility_threshold` | `float` | `0.3` | — | Visibility cutoff used by low-confidence masking. |
+| `missing_value` | `float` | `-999.0` | — | Sentinel written for masked coordinates. |
+<!-- END GENERATED: post_processing.normalize -->
 
 ## `output`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `enabled` | `bool` | `true` | Run the output stage |
-| `max_shard_count` | `int` | `10000` | Max samples per shard |
-| `max_shard_size` | `int?` | `null` | Max shard size in bytes |
+<!-- BEGIN GENERATED: output -->
+| Field | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `enabled` | `bool` | `true` | — | Run WebDataset packaging. |
+| `max_shard_count` | `int` | `10000` | > 0 | Maximum samples per tar shard. |
+| `max_shard_size` | `int \| null` | `null` | > 0 | Approximate maximum payload bytes per shard. |
+<!-- END GENERATED: output -->
 
 ## CLI Examples
 

@@ -12,41 +12,41 @@ class StrictModel(BaseModel):
 # --- Detection configs (one per backend, no `type` field) ---
 
 class YOLODetectionConfig(StrictModel):
-    model: str = "yolo11m.pt"
-    device: str = "cpu"
-    confidence_threshold: float = 0.5
-    min_bbox_area: float = 0.05
-    batch_size: int = Field(default=16, gt=0)
-    allow_download: bool = True
-    weights_dir: str | None = None
+    model: str = Field(default="yolo11m.pt", description="YOLO model alias or local weights path.")
+    device: str = Field(default="cpu", description="Ultralytics inference device, for example cpu or cuda:0.")
+    confidence_threshold: float = Field(default=0.5, description="Minimum person detection confidence.")
+    min_bbox_area: float = Field(default=0.05, description="Minimum detection box area as a fraction of frame area.")
+    batch_size: int = Field(default=16, gt=0, description="Frames per detector inference batch.")
+    allow_download: bool = Field(default=True, description="Allow download of missing official YOLO weights.")
+    weights_dir: str | None = Field(default=None, description="Optional directory used to resolve local YOLO weights.")
 
 
 class MMDetDetectionConfig(StrictModel):
-    det_model_config: str
-    det_model_checkpoint: str
-    device: str = "cuda:0"
-    batch_size: int = Field(default=16, gt=0)
+    det_model_config: str = Field(description="MMDetection model config path.")
+    det_model_checkpoint: str = Field(description="MMDetection checkpoint path or URL.")
+    device: str = Field(default="cuda:0", description="MMDetection inference device.")
+    batch_size: int = Field(default=16, gt=0, description="Frames per detector inference batch.")
 
 
 class MediaPipeDetectionConfig(StrictModel):
-    min_detection_confidence: float = 0.5
+    min_detection_confidence: float = Field(default=0.5, description="Minimum MediaPipe person detection confidence.")
 
 
 # --- Pose configs (one per backend, no `type` field) ---
 
 class MediaPipePoseConfig(StrictModel):
-    model_complexity: int = 1
-    min_detection_confidence: float = 0.5
-    min_tracking_confidence: float = 0.5
-    refine_face_landmarks: bool = True
-    batch_size: int = 16
+    model_complexity: int = Field(default=1, description="MediaPipe Holistic model complexity.")
+    min_detection_confidence: float = Field(default=0.5, description="Minimum initial landmark detection confidence.")
+    min_tracking_confidence: float = Field(default=0.5, description="Minimum landmark tracking confidence.")
+    refine_face_landmarks: bool = Field(default=True, description="Enable refined face landmarks, producing 553 total points.")
+    batch_size: int = Field(default=16, description="Frames passed to the pose backend per pipeline batch.")
 
 
 class MMPosePoseConfig(StrictModel):
-    pose_model_config: str
-    pose_model_checkpoint: str
-    device: str = "cuda:0"
-    batch_size: int = 16
+    pose_model_config: str = Field(description="MMPose model config path or package resource.")
+    pose_model_checkpoint: str = Field(description="MMPose checkpoint path or URL.")
+    device: str = Field(default="cuda:0", description="MMPose inference device.")
+    batch_size: int = Field(default=16, description="Frames passed to the pose backend per pipeline batch.")
 
 
 # --- Config selector maps (used by model_validator) ---
@@ -83,21 +83,21 @@ NUMERIC_PRESET_SPECS = {
 
 
 class VideoProcessingConfig(StrictModel):
-    codec: str = "libx264"
-    padding: float = 0.0
-    resize: list[int] | None = None
+    codec: str = Field(default="libx264", description="FFmpeg encoder used for crop or compression output.")
+    padding: float = Field(default=0.0, description="Fractional padding added around a detected crop box.")
+    resize: list[int] | None = Field(default=None, description="Optional output size as [width, height]; compression forbids resizing.")
     # Constant-quality level: -crf on software encoders, -cq on NVENC. AV1
     # allows up to 63; h264/hevc cap at 51.
-    crf: int = Field(default=20, ge=0, le=63)
-    preset: str = "medium"
+    crf: int = Field(default=20, ge=0, le=63, description="Constant-quality value used by video compression; crop uses 15.")
+    preset: str = Field(default="medium", description="Encoder speed/efficiency preset in codec-specific form.")
     # NVENC spatial/temporal AQ strength (1 weakest, 15 strongest).
-    aq_strength: int = Field(default=8, ge=1, le=15)
+    aq_strength: int = Field(default=8, ge=1, le=15, description="NVENC spatial and temporal adaptive-quantization strength.")
     # Physical NVIDIA GPU index passed to NVENC/NVDEC; null uses FFmpeg default.
-    nvenc_gpu: int | None = Field(default=None, ge=0)
+    nvenc_gpu: int | None = Field(default=None, ge=0, description="Physical NVIDIA GPU index; null lets FFmpeg choose.")
     # VBV ceiling as a fraction of the source bitrate; null disables the cap.
-    max_bitrate_ratio: float | None = Field(default=0.8, gt=0.0)
-    min_video_reduction_ratio: float = Field(default=0.10, ge=0.0, lt=1.0)
-    encoding_timeout_seconds: int = Field(default=3600, gt=0)
+    max_bitrate_ratio: float | None = Field(default=0.8, gt=0.0, description="Maximum output bitrate as a fraction of source bitrate.")
+    min_video_reduction_ratio: float = Field(default=0.10, ge=0.0, lt=1.0, description="Minimum size reduction required to keep a re-encode.")
+    encoding_timeout_seconds: int = Field(default=3600, gt=0, description="Per-video FFmpeg encoding timeout in seconds.")
 
     @field_validator("preset", mode="before")
     @classmethod
@@ -152,35 +152,35 @@ class VideoProcessingConfig(StrictModel):
 
 
 class PartsProcessingConfig(StrictModel):
-    crop_size: int = Field(default=224, gt=0)
-    bbox_scale: float = Field(default=1.2, gt=0)
-    codec: str = "mp4v"
-    missing_value: float = -1.0
+    crop_size: int = Field(default=224, gt=0, description="Square size in pixels for face and hand streams.")
+    bbox_scale: float = Field(default=1.2, gt=0, description="Scale applied to face and hand landmark boxes.")
+    codec: str = Field(default="mp4v", description="OpenCV FourCC used for part-stream MP4 files.")
+    missing_value: float = Field(default=-1.0, description="Sentinel for missing body pose values and boxes.")
 
 
 # --- Stage configs ---
 
 class DatasetConfig(StrictModel):
-    name: str
-    download: bool = True
-    manifest: bool = True
-    source: dict[str, Any] = Field(default_factory=dict)
+    name: str = Field(description="Dataset name registered in DATASET_REGISTRY.")
+    download: bool = Field(default=True, description="Run the dataset download or local-validation stage.")
+    manifest: bool = Field(default=True, description="Build a manifest; false loads paths.manifest when set.")
+    source: dict[str, Any] = Field(default_factory=dict, description="Adapter-specific source settings.")
 
 
 class ProcessingConfig(StrictModel):
-    enabled: bool = True
+    enabled: bool = Field(default=True, description="Run the selected processing stage.")
     processor: Literal[
         "video2pose",
         "video2crop",
         "video2compression",
         "video2parts",
-    ] = "video2pose"
-    detection: Literal["yolo", "mediapipe", "mmdet", "null"] = "null"
-    pose: Literal["mediapipe", "mmpose"] | None = None
+    ] = Field(default="video2pose", description="Main processor implementation.")
+    detection: Literal["yolo", "mediapipe", "mmdet", "null"] = Field(default="null", description="Person detection backend.")
+    pose: Literal["mediapipe", "mmpose"] | None = Field(default=None, description="Pose backend required by video2pose and video2parts.")
 
     # Shared sampling param: native / ratio / absolute FPS
-    sample_rate: float | None = 0.5
-    max_workers: int = Field(default=1, gt=0)
+    sample_rate: float | None = Field(default=0.5, description="Frame sampling mode: null native, fraction ratio, or absolute FPS.")
+    max_workers: int = Field(default=1, gt=0, description="Worker count used by post-processing and compression.")
 
     # Backend-specific configs — raw dicts from YAML, validated into typed
     # models by model_validator and stored back as public attributes.
@@ -190,10 +190,10 @@ class ProcessingConfig(StrictModel):
         | MediaPipeDetectionConfig
         | dict
         | None
-    ) = None
-    pose_config: MediaPipePoseConfig | MMPosePoseConfig | dict | None = None
-    video_config: VideoProcessingConfig | None = None
-    parts_config: PartsProcessingConfig | dict | None = None
+    ) = Field(default=None, description="Configuration for the selected detection backend.")
+    pose_config: MediaPipePoseConfig | MMPosePoseConfig | dict | None = Field(default=None, description="Configuration for the selected pose backend.")
+    video_config: VideoProcessingConfig | None = Field(default=None, description="Video crop or compression settings.")
+    parts_config: PartsProcessingConfig | dict | None = Field(default=None, description="Face, hand, and body-stream settings for video2parts.")
 
     @model_validator(mode="before")
     @classmethod
@@ -260,15 +260,15 @@ class ProcessingConfig(StrictModel):
 
 
 class NormalizeConfig(StrictModel):
-    mode: Literal["isotropic_3d", "xy_isotropic_z_minmax"] = "xy_isotropic_z_minmax"
-    remove_z: bool = False
-    select_keypoints: bool = True
-    keypoint_preset: str | None = None
-    keypoint_indices: list[int] | None = None
-    mask_empty_frames: bool = True
-    mask_low_confidence: bool = False
-    visibility_threshold: float = 0.3
-    missing_value: float = -999.0
+    mode: Literal["isotropic_3d", "xy_isotropic_z_minmax"] = Field(default="xy_isotropic_z_minmax", description="Coordinate normalization algorithm.")
+    remove_z: bool = Field(default=False, description="Drop the z coordinate after normalization.")
+    select_keypoints: bool = Field(default=True, description="Apply a preset or explicit keypoint selection before flattening.")
+    keypoint_preset: str | None = Field(default=None, description="Named built-in keypoint selection preset.")
+    keypoint_indices: list[int] | None = Field(default=None, description="Explicit keypoint indices used when no preset is selected.")
+    mask_empty_frames: bool = Field(default=True, description="Replace all-zero frames with the missing-value sentinel.")
+    mask_low_confidence: bool = Field(default=False, description="Mask landmarks below the visibility threshold.")
+    visibility_threshold: float = Field(default=0.3, description="Visibility cutoff used by low-confidence masking.")
+    missing_value: float = Field(default=-999.0, description="Sentinel written for masked coordinates.")
 
     @field_validator("keypoint_preset")
     @classmethod
@@ -284,35 +284,37 @@ class NormalizeConfig(StrictModel):
 
 
 class PostProcessingConfig(StrictModel):
-    enabled: bool = False
-    normalize: NormalizeConfig | None = None
+    enabled: bool = Field(default=False, description="Run landmark post-processing.")
+    normalize: NormalizeConfig | None = Field(default=None, description="Landmark normalization settings.")
 
 
 class OutputConfig(StrictModel):
-    enabled: bool = True
-    max_shard_count: int = Field(default=10_000, gt=0)
-    max_shard_size: int | None = Field(default=None, gt=0)
+    enabled: bool = Field(default=True, description="Run WebDataset packaging.")
+    max_shard_count: int = Field(default=10_000, gt=0, description="Maximum samples per tar shard.")
+    max_shard_size: int | None = Field(default=None, gt=0, description="Approximate maximum payload bytes per shard.")
 
 
 class PathsConfig(StrictModel):
-    root: str = ""
-    videos: str = ""
-    transcripts: str = ""
-    manifest: str = ""
-    output: str = ""
-    webdataset: str = ""
+    root: str = Field(default="", description="Dataset root used to derive omitted paths.")
+    videos: str = Field(default="", description="Source video directory.")
+    transcripts: str = Field(default="", description="Transcript JSON directory.")
+    manifest: str = Field(default="", description="Manifest TSV path.")
+    output: str = Field(default="", description="Base processor artifact directory.")
+    webdataset: str = Field(default="", description="Base WebDataset shard directory.")
 
 
 # --- Top-level ---
 
 class Config(StrictModel):
-    dataset: DatasetConfig
+    dataset: DatasetConfig = Field(description="Dataset adapter settings.")
     processing: ProcessingConfig = Field(
-        default_factory=lambda: ProcessingConfig(enabled=False)
+        default_factory=lambda: ProcessingConfig(enabled=False),
+        description="Main processor selection and backend settings.",
     )
     post_processing: PostProcessingConfig = Field(
-        default_factory=PostProcessingConfig
+        default_factory=PostProcessingConfig,
+        description="Optional landmark post-processing settings.",
     )
-    output: OutputConfig = Field(default_factory=OutputConfig)
-    run_name: str = "default"
-    paths: PathsConfig = Field(default_factory=PathsConfig)
+    output: OutputConfig = Field(default_factory=OutputConfig, description="WebDataset output settings.")
+    run_name: str = Field(default="default", description="Namespace appended to output and webdataset paths.")
+    paths: PathsConfig = Field(default_factory=PathsConfig, description="Resolved dataset and artifact paths.")

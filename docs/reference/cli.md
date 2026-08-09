@@ -4,32 +4,49 @@ Use `python -m signdata` as the canonical form. An editable install also exposes
 the equivalent `signdata` console script.
 
 <!-- BEGIN GENERATED: cli -->
+## Commands
+
+| Command | Description |
+|---|---|
+| `run` | Run a preprocessing job |
+| `experiment` | Run a multi-job experiment |
+
 ## `run`
 
 ```text
-python -m signdata run [config] [--force-all] [--run-name NAME]
-                                [--list-presets]
-                                [--override [KEY=VALUE ...]]
+usage: python -m signdata run [-h] [--force-all] [--run-name NAME]
+                              [--list-presets] [--override [KEY=VALUE ...]]
+                              [CONFIG]
 ```
 
-| Argument | Required | Meaning |
-|---|---:|---|
-| `config` | Unless `--list-presets` is used | YAML job config path |
-| `--force-all` | No | Rerun processing and normalization artifacts that already exist |
-| `--run-name NAME` | No | Override `run_name` for isolated output directories |
-| `--list-presets` | No | Print built-in keypoint presets and exit |
-| `--override KEY=VALUE ...` | No | Apply one or more dot-separated config overrides |
+| Argument | Required | Default | Description |
+|---|---:|---|---|
+| `-h, --help` | no | — | show this help message and exit |
+| `[CONFIG]` | no | `null` | Path to YAML job config file (required unless --list-presets is used) |
+| `--force-all` | no | `false` | Force rerun of all stages |
+| `--run-name NAME` | no | `null` | Override run_name for path isolation |
+| `--list-presets` | no | `false` | List available keypoint presets and exit |
+| `--override [KEY=VALUE ...]` | no | `[]` | Config overrides: key=value (e.g. processing.max_workers=8) |
 
 ## `experiment`
 
 ```text
-python -m signdata experiment config [--force-all]
+usage: python -m signdata experiment [-h] [--force-all] CONFIG
 ```
 
-| Argument | Required | Meaning |
-|---|---:|---|
-| `config` | Yes | YAML experiment config path |
-| `--force-all` | No | Force all stages in every experiment job |
+| Argument | Required | Default | Description |
+|---|---:|---|---|
+| `-h, --help` | no | — | show this help message and exit |
+| `CONFIG` | yes | — | Path to YAML experiment config file |
+| `--force-all` | no | `false` | Force rerun of all stages in every job |
+
+## Keypoint Presets
+
+| Name | Description |
+|---|---|
+| `mediapipe_543_to_83` | MediaPipe unrefined: 6 pose + 35 face + 21 left hand + 21 right hand |
+| `mediapipe_553_to_85` | MediaPipe refined: 6 pose + 37 face + 21 left hand + 21 right hand |
+| `mmpose_133_to_85` | COCO WholeBody 133 to 85 selected upper body, face, and hand keypoints |
 <!-- END GENERATED: cli -->
 
 Override values are parsed as YAML scalars and collections. Put `--override`

@@ -177,6 +177,16 @@ class MyExtractor(LandmarkExtractor):
 
 3. Set `extractor.name: my_extractor` in your job YAML.
 
+## Generated Reference Documentation
+
+When `src/signdata/config/schema.py` or `src/signdata/cli.py` changes, regenerate the code-derived tables and commit the result:
+
+```bash
+python scripts/gen_docs_reference.py
+```
+
+The generator fails when a configured marker is absent or malformed. Run it twice when changing the generator itself; the second run must leave both reference files unchanged.
+
 ## Running Tests
 
 ```bash
