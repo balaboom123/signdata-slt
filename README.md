@@ -52,8 +52,12 @@ git clone https://github.com/balaboom123/signdata-slt.git
 cd signdata-slt
 python -m venv venv
 source venv/bin/activate  # Linux/macOS — use venv\Scripts\activate on Windows
-pip install -r requirements.txt
+python -m pip install -e .
 ```
+
+Use `python -m pip install -e ".[dev]"` when developing or running the tests.
+The canonical invocation is `python -m signdata ...`; the installed `signdata`
+console script is an equivalent short form.
 
 ### Optional: GPU-based Extractors (MMPose, MMDet)
 

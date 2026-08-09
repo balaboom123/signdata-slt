@@ -1,15 +1,12 @@
 """Shared fixtures for signdata test suite."""
 
-import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
 import yaml
 
-# Ensure src/ is on the path so signdata can be imported
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
 @pytest.fixture

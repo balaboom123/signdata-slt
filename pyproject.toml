@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=60"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "signdata"
+version = "2.0.0"
+description = "Config-driven preprocessing pipeline for sign language datasets"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dependencies = [
+    "torch>=2.0.1",
+    "yt-dlp>=2025.6.30",
+    "youtube-transcript-api==1.1.1",
+    "tqdm==4.66.5",
+    "numpy==1.26.4",
+    "pandas==2.3.0",
+    "opencv-python==4.11.0.86",
+    "mediapipe==0.10.21",
+    "ftfy==6.3.1",
+    "pyyaml==6.0.3",
+    "pydantic==2.12.5",
+    "ultralytics>=8.4.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.2"]
+
+[project.scripts]
+signdata = "signdata.__main__:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["signdata*"]

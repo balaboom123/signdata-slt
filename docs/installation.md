@@ -7,12 +7,16 @@ git clone https://github.com/balaboom123/signdata-slt.git
 cd signdata-slt
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -e .
 ```
 
 This installs dependencies for MediaPipe pose jobs and the shipped CPU YOLO
 jobs. MMPose and MMDet are installed separately below because they require a
 matching CUDA and OpenMMLab stack.
+
+Use `python -m pip install -e ".[dev]"` when developing or running the tests.
+Run jobs with the canonical `python -m signdata ...` form. The installed
+`signdata` console script is an equivalent short form.
 
 ### FFmpeg availability
 
