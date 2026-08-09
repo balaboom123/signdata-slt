@@ -96,11 +96,11 @@ The important point for this repository is that the paper's baseline depends on 
 
 The closest experiment config in this repo is:
 
-- [`configs/experiments/baseline_youtube_asl.yaml`](../../configs/experiments/baseline_youtube_asl.yaml)
+- [`configs/experiments/baseline_youtube_asl.yaml`](../../../configs/experiments/baseline_youtube_asl.yaml)
 
 That config is aligned with the paper where the current config system exposes a setting:
 
-- It runs the MediaPipe job at [`configs/jobs/youtube_asl/mediapipe.yaml`](../../configs/jobs/youtube_asl/mediapipe.yaml)
+- It runs the MediaPipe job at [`configs/jobs/youtube_asl/mediapipe.yaml`](../../../configs/jobs/youtube_asl/mediapipe.yaml)
 - It keeps the 85-keypoint landmark subset
 - It uses `sample_rate: 0.5` to match "discard every second frame"
 - It keeps `missing_value: -999.0` for missing landmarks

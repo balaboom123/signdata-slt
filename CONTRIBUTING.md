@@ -128,8 +128,8 @@ class MyDataset(DatasetAdapter):
 1. Create `src/signdata/datasets/my_dataset/` using the package layout above.
 2. Export the adapter in `src/signdata/datasets/my_dataset/__init__.py`.
 3. Re-export it from `src/signdata/datasets/__init__.py`.
-4. Add a job YAML under `configs/jobs/my_dataset/`, for example `configs/jobs/my_dataset/mediapipe.yaml`. See [configuration reference](docs/configuration.md#minimal-working-config).
-5. Add dataset documentation to `docs/datasets.md`.
+4. Add a job YAML under `configs/jobs/my_dataset/`, for example `configs/jobs/my_dataset/mediapipe.yaml`. See [configuration reference](docs/reference/configuration.md#minimal-working-config).
+5. Add dataset documentation to `docs/guides/datasets/<dataset-name>.md`.
 
 ## Adding a New Processor
 
@@ -183,4 +183,4 @@ class MyExtractor(LandmarkExtractor):
 python -m pytest -q tests
 ```
 
-See [architecture docs](docs/architecture.md) for how the registry, recipes, and pipeline runner fit together.
+See [architecture docs](docs/concepts/architecture.md) for how the registry, recipes, and pipeline runner fit together.

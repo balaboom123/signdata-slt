@@ -4,9 +4,9 @@ This note records the canonical paper reference for the How2Sign dataset used by
 
 Relevant repo entry points:
 
-- [`configs/jobs/how2sign/mediapipe.yaml`](../../configs/jobs/how2sign/mediapipe.yaml)
-- [`configs/jobs/how2sign/mmpose.yaml`](../../configs/jobs/how2sign/mmpose.yaml)
-- [`configs/experiments/privacy_aware_slt.yaml`](../../configs/experiments/privacy_aware_slt.yaml) (YouTube-ASL video-mode experiment; adaptable for How2Sign)
+- [`configs/jobs/how2sign/mediapipe.yaml`](../../../configs/jobs/how2sign/mediapipe.yaml)
+- [`configs/jobs/how2sign/mmpose.yaml`](../../../configs/jobs/how2sign/mmpose.yaml)
+- A `privacy_aware_slt.yaml` experiment was proposed for adaptation but is not shipped.
 
 ## Citation
 

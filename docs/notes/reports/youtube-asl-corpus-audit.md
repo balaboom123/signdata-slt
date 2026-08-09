@@ -61,7 +61,7 @@ In this initial three-level HEVC-only pilot, **Base** was the best storage/quali
 - [Final analysis report](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval/mediapipe_compression_analysis.md)
 - [CSV summary](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval/mediapipe_compression_summary.csv)
 - [JSON results](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval/mediapipe_compression_results.json)
-- [Evaluation script](../../scripts/evaluate_mediapipe_compression.py)
+- [Evaluation script](../../../scripts/evaluate_mediapipe_compression.py)
 
 ## NVENC profile benchmark and GPU-1 MediaPipe check
 
@@ -90,7 +90,7 @@ These numbers measure MediaPipe landmark stability, not translation accuracy. Va
 - [GPU-1 MediaPipe analysis](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval_nvenc_gpu1/mediapipe_compression_analysis.md)
 - [GPU-1 MediaPipe summary](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval_nvenc_gpu1/mediapipe_compression_summary.csv)
 - [GPU-1 MediaPipe JSON results](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval_nvenc_gpu1/mediapipe_compression_results.json)
-- [NVENC benchmark script](../../scripts/benchmark_nvenc_profiles.py)
+- [NVENC benchmark script](../../../scripts/benchmark_nvenc_profiles.py)
 
 ## CUDA-0 AV1 versus HEVC comparison
 
@@ -165,7 +165,7 @@ The ranking first rejects profiles with more than **0.5 percentage-point hand-de
 
 Use **AV1 CQ34** as the new general recommendation when AV1 decoding is available. Use **AV1 CQ32** when preserving a larger landmark-quality margin matters, **AV1 CQ36** for storage-first experiments, and **HEVC CQ28** for wider deployment compatibility. H.264 CQ26 remains a legacy compatibility fallback, but it is not a top-five metric winner: it saves less storage and has higher landmark error than the preferred AV1 profiles. AQ12 is not recommended because it did not improve either codec at CQ30.
 
-The best-overall profile has been adopted as the default in [`configs/jobs/tools/compression.yaml`](../../configs/jobs/tools/compression.yaml):
+The best-overall profile has been adopted as the default in [`configs/jobs/tools/compression.yaml`](../../../configs/jobs/tools/compression.yaml):
 
 ```yaml
 codec: av1_nvenc

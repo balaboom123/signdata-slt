@@ -1,0 +1,22 @@
+# SLoVo
+
+Russian Sign Language isolated-sign dataset with trimmed RGB videos and an
+`annotations.csv` file ([SLoVo GitHub](https://github.com/hukenovs/slovo)).
+
+**First-stage config:**
+
+```bash
+python -m signdata run configs/base/datasets/slovo.yaml \
+  --override output.enabled=false
+```
+
+**Setup:**
+1. Download and extract the official trimmed SLoVo release under `dataset/slovo/`, or override `dataset.source.release_dir`.
+2. Keep the official `annotations.csv` in the release root, or override `dataset.source.annotations_csv`.
+3. Keep videos named by `attachment_id`, for example `dataset/slovo/<attachment_id>.mp4`.
+
+The SLoVo adapter validates the local release and builds one row per annotation.
+It maps the official `train` boolean to `SPLIT=train|test`, uses `text` as both
+`GLOSS` and `TEXT`, and derives `CLASS_ID` values from the annotation labels by
+default.
+

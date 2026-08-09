@@ -66,7 +66,7 @@ The closest mapping in this repo is to use the `video` pipeline mode and prepare
 
 The experiment config is:
 
-- [`configs/experiments/privacy_aware_slt.yaml`](../../configs/experiments/privacy_aware_slt.yaml)
+- `configs/experiments/privacy_aware_slt.yaml` was proposed by this note but is not shipped.
 
 This config intentionally does the following:
 
@@ -96,7 +96,7 @@ Some paper details are not directly implemented as config-driven preprocessing i
 - There is no config-controlled random crop, horizontal flip, or RandAug stage for RGB clips
 - There is no dataset config for DailyMoth-70h in the current repo
 
-So the new experiment YAMLs capture the paper's preprocessing direction correctly: RGB clips instead of landmarks, privacy-aware blurred inputs, and clip packaging for downstream training. Exact reproduction of the full SSVP-SLT training recipe would still require training-side code outside this preprocessing pipeline.
+The proposed experiment would capture the paper's preprocessing direction correctly: RGB clips instead of landmarks, privacy-aware blurred inputs, and clip packaging for downstream training. Exact reproduction of the full SSVP-SLT training recipe would still require training-side code outside this preprocessing pipeline.
 
 ## Citation
 

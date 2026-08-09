@@ -10,30 +10,9 @@ python -m signdata experiment <experiment.yaml>
 `src/signdata/__main__.py` imports `signdata.datasets` and
 `signdata.processors` to populate registries before any config is executed.
 
-## Run Flow
+## Execution Model
 
-```text
-job YAML
-  │
-  ▼
-load_config()          # resolve paths and apply overrides
-  │
-  ▼
-PipelineRunner(config)
-  │  ├─ look up dataset in DATASET_REGISTRY
-  │  ├─ resolve run-scoped output paths
-  │  ├─ run dataset.download if enabled
-  │  ├─ run dataset.manifest if enabled
-  │  ├─ run processing.<processor> if enabled
-  │  ├─ run post_processing.<recipe> entries if enabled
-  │  └─ run output.<type> if enabled
-  │
-  ▼
-PipelineContext (final)
-```
-
-Experiment runs load `configs/experiments/*.yaml`, then execute each referenced
-job under `configs/jobs/...` with its own override set.
+The fixed stage order, context threading, and resume behavior are documented in [Pipeline Model](pipeline-model.md).
 
 ## Registries
 
@@ -58,25 +37,6 @@ Pose and parts processing use its OpenCV fallback when the FFmpeg executable is
 not installed; video crop and compression outputs require FFmpeg.
 
 When enabled, post-processing runs landmark normalization.
-
-## PipelineContext
-
-`PipelineContext` carries shared state between stages:
-
-| Field | Type | Description |
-|---|---|---|
-| `config` | `Config` | Full parsed config |
-| `dataset` | `DatasetAdapter` | Active dataset adapter |
-| `output_dir` | `Path?` | Run-scoped output directory: `{paths.output}/{run_name}` |
-| `webdataset_dir` | `Path?` | Run-scoped shard directory: `{paths.webdataset}/{run_name}` |
-| `videos_dir` | `Path?` | Source video directory |
-| `manifest_path` | `Path?` | Current manifest path |
-| `manifest_df` | `DataFrame?` | Loaded manifest |
-| `force_all` | `bool` | Rerun outputs even if files already exist |
-| `stats` | `dict[str, dict]` | Per-stage counters |
-
-The runner resolves run-scoped output paths once at startup, then each stage
-reads and writes through `PipelineContext` instead of hardcoding artifact paths.
 
 ## Package Layout
 
@@ -132,6 +92,7 @@ extensions are `schema.py`, `constants.py`, `parsing.py`, or `splits.py`.
 
 ## See Also
 
-- [Configuration Reference](configuration.md) -- config layout and key fields
-- [Pipeline Stages](pipeline-stages.md) -- stage-by-stage behavior
-- [Datasets](datasets.md) -- dataset-specific setup notes
+- [Pipeline model](pipeline-model.md) -- execution order, context, and resume behavior
+- [Configuration Reference](../reference/configuration.md) -- config layout and key fields
+- [Pipeline Stages](../reference/stages.md) -- stage-by-stage behavior
+- [Datasets](../guides/datasets/index.md) -- dataset-specific setup notes

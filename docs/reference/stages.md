@@ -1,12 +1,6 @@
 # Pipeline Stages
 
-`PipelineRunner` executes the pipeline in fixed order:
-
-1. `dataset.download`
-2. `dataset.manifest`
-3. `processing.<processor>`
-4. `post_processing.<recipe>`
-5. `output.<type>`
+For the fixed execution order, context threading, and resume behavior, see [Pipeline Model](../concepts/pipeline-model.md).
 
 ## Stage Summary
 
@@ -223,6 +217,7 @@ Packages the manifest plus the active artifact directory into shards:
 
 ## See Also
 
-- [Architecture](architecture.md) -- runner and routing
+- [Pipeline model](../concepts/pipeline-model.md) -- execution order and context threading
+- [Architecture](../concepts/architecture.md) -- runner and routing
 - [Configuration Reference](configuration.md) -- config layout and fields
-- [Datasets](datasets.md) -- dataset-specific setup
+- [Datasets](../guides/datasets/index.md) -- dataset-specific setup

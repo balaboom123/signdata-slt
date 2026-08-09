@@ -78,6 +78,6 @@ Both commands should print without errors. If you see CUDA-related issues, verif
 
 ## See Also
 
-- [Architecture](architecture.md) -- system design and pipeline flow
-- [Configuration Reference](configuration.md) -- full config schema and CLI overrides
-- [Datasets](datasets.md) -- dataset-specific setup guides
+- [Architecture](../concepts/architecture.md) -- system design and pipeline flow
+- [Configuration Reference](../reference/configuration.md) -- full config schema and CLI overrides
+- [Datasets](datasets/index.md) -- dataset-specific setup guides

@@ -315,7 +315,7 @@ The CRF, AQ, GPU, bitrate-ratio, reduction-gate and timeout controls are read by
 
 The schema defaults above remain generic for software-encoder and crop-job
 compatibility. The bundled
-[`configs/jobs/tools/compression.yaml`](../configs/jobs/tools/compression.yaml)
+[`configs/jobs/tools/compression.yaml`](../../configs/jobs/tools/compression.yaml)
 job overrides them with the evaluated default: `av1_nvenc`, CQ34, p7, AQ8,
 CUDA 0, and a 0.52× source-bitrate ceiling.
 
@@ -378,6 +378,6 @@ python -m signdata run --list-presets
 
 ## See Also
 
-- [Architecture](architecture.md) -- runner, registries, and package layout
-- [Pipeline Stages](pipeline-stages.md) -- stage behavior and outputs
-- [Installation Guide](installation.md) -- environment setup and MMPose dependencies
+- [Architecture](../concepts/architecture.md) -- runner, registries, and package layout
+- [Pipeline Stages](stages.md) -- stage behavior and outputs
+- [Installation Guide](../guides/installation.md) -- environment setup and MMPose dependencies
