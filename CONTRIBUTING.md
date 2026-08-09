@@ -144,7 +144,19 @@ Pose backends use an explicit factory, not a registry:
 configs select a backend with `processing.pose` and configure it with
 `processing.pose_config`.
 
-## Generated Reference Documentation
+## Documentation
+
+Put each page in exactly one purpose-based folder:
+
+| Location | Admission rule |
+|---|---|
+| `docs/guides/` | The reader wants to accomplish a task; give ordered, runnable steps. |
+| `docs/reference/` | The reader needs to look up facts; be exhaustive and scannable. |
+| `docs/concepts/` | The reader wants to understand why; explain the model without task steps. |
+| `docs/notes/` | The content is a dated record; mark its status and do not maintain it as current truth. |
+
+Link to the authoritative page when a fact already has a home. Do not copy
+package layouts, field defaults, or other reference facts into task guides.
 
 When `src/signdata/config/schema.py` or `src/signdata/cli.py` changes,
 regenerate the code-derived tables and commit the result:
@@ -156,6 +168,16 @@ python scripts/gen_docs_reference.py
 The generator fails when a configured marker is absent or malformed. Run it
 twice when changing the generator itself; the second run must leave both
 reference files unchanged.
+
+Run the fast documentation guards while editing Markdown:
+
+```bash
+python -m pytest -q tests/docs
+```
+
+They check local links and anchors, generated-reference freshness, config paths
+and override keys in bash blocks, `dataset.source` table coverage, and leaked
+machine-local home paths.
 
 ## Running Tests
 

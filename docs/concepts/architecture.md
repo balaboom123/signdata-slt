@@ -3,7 +3,7 @@
 ## Entry Points
 
 ```bash
-python -m signdata run <job.yaml> [--override key=value ...]
+python -m signdata run <job.yaml> [--override processing.max_workers=8]
 python -m signdata experiment <experiment.yaml>
 ```
 

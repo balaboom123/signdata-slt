@@ -10,108 +10,56 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue?style=flat" alt="Python 3.11+"/></a>
 </p>
 
-A config-driven, modular pipeline for preprocessing multiple **Sign Language** datasets.
-Supports multiple extractors including **MediaPipe Holistic**, **MMPose**, **MMDet**, and **YOLO**. Supports two pipeline modes including **Pose Landmarks** and **Video Clips**.
-
----
-
-## Key Features
-
-- **Config-Driven** — YAML job configs, experiment configs, and CLI overrides
-- **Multiple Extractors** — MediaPipe Holistic, MMPose, MMDet, and YOLO
-- **Two Pipeline Modes** — `pose` (landmarks) and `video` (clip extraction)
-- **WebDataset Output** — sharded tar archives for efficient training data loading
-
----
-
-## Supported Datasets
-
-| Dataset | Venue | Description | License |
-|:--------|:------|:------------|:--------|
-| **[YouTube-ASL](docs/guides/datasets/youtube-asl.md)** | NeurIPS 2023 | 11,000+ videos, 73,000+ segments -- open-domain ASL-English parallel corpus | [Apache-2.0](https://github.com/google-research/google-research/tree/master/youtube_asl) |
-| **[OpenASL](docs/guides/datasets/openasl.md)** | EMNLP 2022 | Open-domain ASL-English translation dataset with official TSV and bbox metadata | [CC BY-NC-ND 4.0](https://github.com/chevalierNoir/OpenASL) |
-| **[How2Sign](docs/guides/datasets/how2sign.md)** | CVPR 2021 | 80+ hours of instructional ASL in a controlled studio environment | [CC BY-NC 4.0](https://how2sign.github.io/) |
-| **[BOBSL](docs/guides/datasets/bobsl.md)** | ICCV 2021 | Broadcast subtitle-aligned BSL corpus with continuous subtitle segments and isolated-sign annotations | Dataset access required |
-| **[BSL-1K](docs/guides/datasets/bsl1k.md)** | arXiv 2020 | Compatibility lexical view over the public BOBSL release for isolated-sign style preprocessing | Follows BOBSL release terms |
-| **[WLASL](docs/guides/datasets/wlasl.md)** | WACV 2020 | 12,000+ isolated sign clips across 2,000 ASL glosses | [Dataset site](https://dxli94.github.io/WLASL/) |
-| **[MS-ASL](docs/guides/datasets/ms-asl.md)** | CVPR 2019 | Large-scale isolated ASL dataset with signer-diverse lexical clips | [Microsoft Download Center terms](https://www.microsoft.com/en-us/download/details.aspx?id=100121) |
-| **[AUTSL](docs/guides/datasets/autsl.md)** | ICCV 2021 challenge | Turkish Sign Language isolated-sign benchmark with RGB/depth clips and signer-independent train/val/test splits | Dataset access required |
-| **[CSL](docs/guides/datasets/csl.md)** | USTC release 2015 | 100 continuous Chinese sign sentences from 50 signers; RGB/depth/skeleton release with paper-aligned Split I / Split II evaluation | [CSL release agreement](https://ustc-slr.github.io/datasets/2015_csl/Release-Agreement-csl2015.pdf) |
-| **[LSA64](docs/guides/datasets/lsa64.md)** | CACIC 2016 | 3,200 isolated Argentinian Sign Language clips across 64 glosses | [CC BY-NC-SA 4.0](https://facundoq.github.io/datasets/lsa64/) |
-| **[SLoVo](docs/guides/datasets/slovo.md)** | ICCVS 2023 | Russian Sign Language isolated-sign clips with official `annotations.csv` | [Dataset license](https://github.com/hukenovs/slovo) |
-| **[RWTH-PHOENIX-Weather](docs/guides/datasets/rwth-phoenix-weather.md)** | CVIU 2015 | German Sign Language weather corpus distributed as image sequences and annotations | Dataset access required |
-
-For paper-aligned preprocessing methodology, see [Research-Aligned Preprocessing](docs/notes/index.md).
-
----
+SignDATA is a config-driven preprocessing pipeline for sign-language datasets.
+It builds manifests, extracts pose landmarks or video representations, and
+packages training samples as WebDataset shards.
 
 ## Installation
 
 ```bash
 git clone https://github.com/balaboom123/signdata-slt.git
 cd signdata-slt
-python -m venv venv
-source venv/bin/activate  # Linux/macOS — use venv\Scripts\activate on Windows
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS; use .venv\Scripts\activate on Windows
 python -m pip install -e .
+python -m signdata run --list-presets
 ```
 
-Use `python -m pip install -e ".[dev]"` when developing or running the tests.
-The canonical invocation is `python -m signdata ...`; the installed `signdata`
-console script is an equivalent short form.
-
-### Optional: GPU-based Extractors (MMPose, MMDet)
-
-MediaPipe and the shipped YOLO jobs work on CPU after the base install. MMPose
-and MMDet require a CUDA-capable GPU and additional dependencies -- see the
-[Installation Guide](docs/guides/installation.md) for setup instructions.
-
----
+Use `python -m pip install -e ".[dev]"` for development and tests. MMPose and
+MMDetection require the additional stack in the
+[installation guide](docs/guides/installation.md).
 
 ## Quick Start
 
+Run the shipped YouTube-ASL MediaPipe job:
+
 ```bash
-# YouTube-ASL: download, extract MediaPipe landmarks, normalize, package
 python -m signdata run configs/jobs/youtube_asl/mediapipe.yaml
-
-# How2Sign: extract MMPose landmarks (CUDA required)
-python -m signdata run configs/jobs/how2sign/mmpose.yaml
-
-# BOBSL: validate local release, build subtitle-aligned manifest, extract MediaPipe landmarks
-python -m signdata run configs/jobs/bobsl/mediapipe.yaml
-
-# BSL-1K compatibility view: build isolated-sign manifest from the BOBSL release
-python -m signdata run configs/jobs/bsl1k/mediapipe.yaml
-
-# MS-ASL: validate local clips, extract MediaPipe landmarks, normalize, package
-python -m signdata run configs/jobs/msasl/mediapipe.yaml
-
-# AUTSL: validate local release, extract MediaPipe landmarks, normalize, package
-python -m signdata run configs/jobs/autsl/mediapipe.yaml
-
-# CSL: validate/materialize the continuous release, extract MediaPipe landmarks, normalize, package
-python -m signdata run configs/jobs/csl/mediapipe.yaml
-
-# LSA64: validate local clips, extract MediaPipe landmarks, normalize, package
-python -m signdata run configs/jobs/lsa64/mediapipe.yaml
-
-# Override config values from the command line
-python -m signdata run configs/jobs/youtube_asl/mediapipe.yaml \
-  --override processing.max_workers=8
 ```
 
-Both modes produce [WebDataset](https://github.com/webdataset/webdataset) tar shards for efficient training data loading. See [Pipeline Stages](docs/reference/stages.md) for detailed output formats and data shapes.
+The job downloads available source material, builds a manifest, writes raw and
+normalized landmark arrays under `dataset/youtube_asl/output/default/`, and
+creates shards under `dataset/youtube_asl/webdataset/default/`. For a small,
+offline input-to-shard smoke run with explicit success checks, use the
+[verified quickstart](docs/guides/quickstart.md).
 
----
+## Supported Datasets
+
+| Dataset | Dataset | Dataset |
+|---|---|---|
+| [YouTube-ASL](docs/guides/datasets/youtube-asl.md) | [OpenASL](docs/guides/datasets/openasl.md) | [How2Sign](docs/guides/datasets/how2sign.md) |
+| [BOBSL](docs/guides/datasets/bobsl.md) | [BSL-1K](docs/guides/datasets/bsl1k.md) | [WLASL](docs/guides/datasets/wlasl.md) |
+| [MS-ASL](docs/guides/datasets/ms-asl.md) | [AUTSL](docs/guides/datasets/autsl.md) | [CSL](docs/guides/datasets/csl.md) |
+| [LSA64](docs/guides/datasets/lsa64.md) | [SLoVo](docs/guides/datasets/slovo.md) | [RWTH-PHOENIX-Weather](docs/guides/datasets/rwth-phoenix-weather.md) |
+
+The [dataset guide index](docs/guides/datasets/index.md) is authoritative for
+setup requirements and shipped-job coverage.
 
 ## Documentation
 
-- [Installation Guide](docs/guides/installation.md) -- base setup and MMPose GPU dependencies
-- [Architecture](docs/concepts/architecture.md) -- system design, registry, pipeline flow
-- [Configuration](docs/reference/configuration.md) -- job/experiment layout and CLI overrides
-- [Pipeline Stages](docs/reference/stages.md) -- recipe stages and optional stages
-- [Datasets](docs/guides/datasets/index.md) -- setup for all built-in dataset adapters
-- [Contributing](CONTRIBUTING.md) -- required dataset package structure and extension guide
-- [Research-Aligned Preprocessing](docs/notes/index.md) -- paper-aligned preprocessing notes
+Start with the [documentation index](docs/index.md). It routes installation,
+dataset setup, configuration and CLI lookup, manifest/output contracts,
+architecture, troubleshooting, and dated research notes.
 
 ## Citation
 
@@ -128,6 +76,5 @@ If you use SignDATA in your research, please cite:
 
 ## License
 
-The MIT license in this repository applies to the code and documentation in this project. Use of external datasets, research artifacts, and upstream repos referenced above must comply with their original licenses and usage terms.
-
-MIT -- see [LICENSE](LICENSE).
+The repository code and documentation are licensed under the [MIT License](LICENSE).
+External datasets and research artifacts remain subject to their original terms.
