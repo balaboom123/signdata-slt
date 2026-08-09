@@ -1,42 +1,11 @@
 # Contributing
 
-## Project Structure
+## Source Layout
 
-```text
-signdata/
-├── configs/
-│   ├── experiments/            # Multi-job experiment configs
-│   │   ├── baseline_youtube_asl.yaml
-│   │   └── privacy_aware_slt.yaml
-│   └── jobs/                   # Runnable job configs
-│       ├── youtube_asl/
-│       │   ├── mediapipe.yaml
-│       │   ├── mmpose.yaml
-│       │   └── video.yaml
-│       └── how2sign/
-│           ├── mediapipe.yaml
-│           ├── mmpose.yaml
-│           └── video.yaml
-├── src/signdata/
-│   ├── __main__.py             # CLI entry point
-│   ├── cli.py                  # Argument parsing
-│   ├── registry.py             # Component registry
-│   ├── config/                 # YAML loading and Pydantic schema
-│   ├── pipeline/               # Recipes, runner, and context
-│   ├── datasets/               # Dataset adapters
-│   ├── detection/              # Detection backends
-│   ├── pose/                   # Pose extractors and variants
-│   ├── processors/             # Pipeline processors
-│   ├── presets/                # Keypoint presets
-│   └── utils/                  # Video, file, and text utilities
-├── resources/                  # Shipped model config assets
-├── docs/                       # Documentation
-├── assets/                     # Video ID lists and small assets
-├── tests/
-│   ├── integration/
-│   └── unit/
-└── requirements.txt
-```
+The authoritative package and dataset-adapter layout lives in the
+[architecture reference](docs/concepts/architecture.md#package-layout). Keep
+structural descriptions there instead of copying the tree into contributor or
+configuration pages.
 
 ## Adding a New Dataset
 
@@ -51,7 +20,7 @@ src/signdata/datasets/
 │   ├── availability.py
 │   ├── classmap.py
 │   ├── media.py
-│   ├── paths.py
+│   ├── text.py
 │   └── youtube.py
 └── my_dataset/
     ├── __init__.py
@@ -133,7 +102,8 @@ class MyDataset(DatasetAdapter):
 
 ## Adding a New Processor
 
-1. Create a class in the appropriate `src/signdata/processors/<group>/` package decorated with `@register_processor`:
+1. Create a processor module under `src/signdata/processors/` and decorate its
+   `BaseProcessor` subclass with `@register_processor`:
 
 ```python
 from signdata.processors.base import BaseProcessor
@@ -146,46 +116,46 @@ class MyProcessor(BaseProcessor):
 
     def run(self, context):
         return context
-
-    def validate(self, context) -> bool:
-        return True
 ```
 
-2. Import it in the matching package `__init__.py`, such as `src/signdata/processors/pose/__init__.py` or `src/signdata/processors/video/__init__.py`. Re-export it from `src/signdata/processors/__init__.py` if the top-level package should expose it.
+2. Import the module from `src/signdata/processors/__init__.py`; that import
+   populates `PROCESSOR_REGISTRY` before the runner starts.
+3. Add the registry key to the `ProcessingConfig.processor` `Literal` in
+   `src/signdata/config/schema.py`. The four-stage runner dispatches through
+   `PROCESSOR_REGISTRY`; there is no separate recipe file.
+4. Add schema, processor, and config tests plus at least one runnable job or a
+   clear explanation of why the processor is library-only.
 
-3. Add the stage to the relevant recipe in `src/signdata/pipeline/recipes.py`, or gate it through `config.stage_config` if it should remain optional.
+## Adding a Pose Backend
 
-## Adding a New Extractor
+Pose backends use an explicit factory, not a registry:
 
-1. Create a class in `src/signdata/pose/` or one of its backend packages decorated with `@register_extractor`:
+1. Add a `LandmarkExtractor` implementation under
+   `src/signdata/processors/pose/<backend>/` and export it from that package.
+2. Add a typed backend config model to `src/signdata/config/schema.py`, include
+   it in `POSE_CONFIG_MAP`, and add the backend name to the
+   `ProcessingConfig.pose` `Literal`.
+3. Add the construction branch to `create_estimator()` in
+   `src/signdata/processors/pose/base.py`.
+4. Add unit tests, a runnable job where appropriate, and regenerate the config
+   reference.
 
-```python
-from signdata.processors.pose.base import LandmarkExtractor
-from signdata.registry import register_extractor
-
-
-@register_extractor("my_extractor")
-class MyExtractor(LandmarkExtractor):
-    def process_frame(self, frame):
-        ...
-
-    def close(self):
-        ...
-```
-
-2. Import it in `src/signdata/pose/__init__.py`.
-
-3. Set `extractor.name: my_extractor` in your job YAML.
+`src/signdata/registry.py` defines only dataset and processor registries. Job
+configs select a backend with `processing.pose` and configure it with
+`processing.pose_config`.
 
 ## Generated Reference Documentation
 
-When `src/signdata/config/schema.py` or `src/signdata/cli.py` changes, regenerate the code-derived tables and commit the result:
+When `src/signdata/config/schema.py` or `src/signdata/cli.py` changes,
+regenerate the code-derived tables and commit the result:
 
 ```bash
 python scripts/gen_docs_reference.py
 ```
 
-The generator fails when a configured marker is absent or malformed. Run it twice when changing the generator itself; the second run must leave both reference files unchanged.
+The generator fails when a configured marker is absent or malformed. Run it
+twice when changing the generator itself; the second run must leave both
+reference files unchanged.
 
 ## Running Tests
 
@@ -193,4 +163,9 @@ The generator fails when a configured marker is absent or malformed. Run it twic
 python -m pytest -q tests
 ```
 
-See [architecture docs](docs/concepts/architecture.md) for how the registry, recipes, and pipeline runner fit together.
+`configs/test/` is gitignored, but the integration config-schema test globs it
+when it exists. Remove stale local files there or keep them valid; otherwise a
+checkout can fail tests in a way CI cannot reproduce.
+
+See [architecture docs](docs/concepts/architecture.md) for how the registries
+and pipeline runner fit together.

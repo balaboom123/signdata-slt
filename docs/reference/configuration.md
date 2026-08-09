@@ -42,7 +42,7 @@ processing:
   processor: video2crop
   detection: yolo
   detection_config:
-    model: yolov8n.pt
+    model: yolo11m.pt
 
 run_name: default
 
@@ -54,38 +54,29 @@ paths:
 The loader will derive `paths.transcripts`, `paths.manifest`, `paths.output`,
 and `paths.webdataset` from `paths.root` when they are omitted.
 
-## File Layout
+## Base Config Inheritance
 
-```text
-configs/
-├── experiments/
-│   └── baseline_youtube_asl.yaml
-└── jobs/
-    ├── autsl/
-    │   ├── mediapipe.yaml
-    │   ├── mmpose.yaml
-    │   └── video.yaml
-    ├── msasl/
-    │   ├── mediapipe.yaml
-    │   ├── mmpose.yaml
-    │   └── video.yaml
-    ├── csl/
-    │   ├── mediapipe.yaml
-    │   ├── mmpose.yaml
-    │   └── video.yaml
-    ├── youtube_asl/
-    │   ├── mediapipe.yaml
-    │   ├── mmpose.yaml
-    │   └── video.yaml
-    ├── wlasl/
-    │   ├── mediapipe.yaml
-    │   ├── mmpose.yaml
-    │   └── video.yaml
-    └── how2sign/
-        ├── mediapipe.yaml
-        ├── mmpose.yaml
-        └── video.yaml
+Reusable fragments live under `configs/base/`; runnable jobs live under
+`configs/jobs/`. The authoritative package layout is in
+[Architecture](../concepts/architecture.md#package-layout), so this page does
+not mirror the repository tree.
+
+A job can inherit one base or an ordered list:
+
+```yaml
+base: ../../base/datasets/youtube_asl.yaml
 ```
+
+```yaml
+base:
+  - ../../base/datasets/youtube_asl.yaml
+  - ../../base/post_processing/normalize.yaml
+```
+
+Each reference resolves relative to the YAML file that contains it. Bases may
+inherit recursively. List entries merge from first to last, then the current
+file is merged on top; nested mappings merge recursively and later values win.
+Circular references raise an error that reports the full inheritance chain.
 
 ## Top-Level Fields
 
@@ -165,8 +156,11 @@ If omitted, the loader derives these defaults from `paths.root`:
 | `max_duration` | `float` | `60.0` | Max segment duration |
 | `manifest_csv` | `str` | `""` | Existing manifest path for datasets such as How2Sign |
 | `manifest_tsv` | `str` | `""` | Official TSV manifest path for datasets such as OpenASL |
+| `annotations_csv` | `str` | `""` | Official annotation CSV path for datasets such as SLoVo |
+| `text_column` | `str` | `"en"` | Source text column selected by OpenASL |
 | `bbox_json` | `str` | `""` | Optional bounding-box JSON path for datasets such as OpenASL |
 | `split` | `str` | `"all"` | Split label for datasets such as WLASL, MS-ASL, and AUTSL |
+| `allow_unlabeled` | `bool` | `false` | Include AUTSL videos when split label files are unavailable |
 | `view` | `str` | adapter defaults | Dataset view selector for multi-view releases such as BOBSL (`subtitle_slt` or `isolated_signs`) |
 | `subtitle_alignment` | `str` | adapter defaults | Subtitle alignment choice for BOBSL (`manual` or `original`) |
 | `split_strategy` | `str` | adapter defaults | Split assignment policy for datasets such as LSA64 |
@@ -182,6 +176,16 @@ If omitted, the loader derives these defaults from `paths.root`:
 | `class_map_mode` | `str` | adapter defaults | Class ID handling for datasets such as SLoVo (`derive`, `bundled`, or `none`) |
 | `allow_missing_class_map` | `bool` | `false` | Allow manifest generation without class labels when a class map is unavailable |
 | `text_processing` | `dict` | adapter defaults | Text cleanup options for transcript-derived manifests |
+| `sign_language` | `str` | `""` | Sign-language code written to `video2parts` metadata |
+| `spoken_language` | `str` | `""` | Spoken-language code written to `video2parts` metadata |
+| `country` | `str` | `""` | Country code written to `video2parts` metadata |
+| `license` | `str` | `""` | Dataset license identifier written to `video2parts` metadata |
+
+Known mismatch: `configs/jobs/how2sign/parts.yaml` supplies these four
+metadata keys and `video2parts` reads them, but `How2SignSourceConfig` currently
+forbids them as extras when the dataset stage begins. That shipped job cannot
+complete until the metadata fields are admitted by the adapter or moved out of
+`dataset.source`.
 
 Relative file paths in `dataset.source`, such as `video_ids_file`,
 `manifest_csv`, `manifest_tsv`, `bbox_json`, `annotations_csv`,

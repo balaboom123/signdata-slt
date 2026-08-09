@@ -72,11 +72,8 @@ Supporting modules live in:
 - `src/signdata/processors/detection/`
 - `src/signdata/processors/pose/`
 
-`processing.sample_rate` controls frame selection:
-
-- `null` keeps native FPS
-- `0 < value < 1` keeps that fraction of frames uniformly
-- `value >= 1` downsamples to that FPS without upsampling low-FPS sources
+Frame selection follows the canonical
+[`processing.sample_rate` semantics](configuration.md#sample_rate-semantics).
 
 Key config paths:
 
@@ -100,12 +97,8 @@ Runs a two-pass ffmpeg crop pipeline:
 
 The shared ffmpeg helpers live in `src/signdata/processors/video/ffmpeg.py`.
 
-`processing.sample_rate` controls both ffmpeg decode cadence and output clip
-FPS:
-
-- `null` keeps native FPS
-- `0 < value < 1` keeps that fraction of frames uniformly
-- `value >= 1` downsamples to that FPS without upsampling low-FPS sources
+FFmpeg decode cadence and output FPS follow the canonical
+[`processing.sample_rate` semantics](configuration.md#sample_rate-semantics).
 
 Key config paths:
 

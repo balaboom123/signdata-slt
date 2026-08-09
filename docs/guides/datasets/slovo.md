@@ -10,6 +10,11 @@ python -m signdata run configs/base/datasets/slovo.yaml \
   --override output.enabled=false
 ```
 
+No complete SLoVo processing job is shipped. This is intentionally a
+manifest-only command: omitted paths derive from `dataset/slovo`,
+`processing.enabled` defaults to `false`, and the override disables shard
+output. Create a job under `configs/jobs/` to process the resulting manifest.
+
 **Setup:**
 1. Download and extract the official trimmed SLoVo release under `dataset/slovo/`, or override `dataset.source.release_dir`.
 2. Keep the official `annotations.csv` in the release root, or override `dataset.source.annotations_csv`.

@@ -10,6 +10,11 @@ python -m signdata run configs/base/datasets/openasl.yaml \
   --override output.enabled=false
 ```
 
+No complete OpenASL processing job is shipped. This is intentionally a
+manifest-only command: omitted paths derive from `dataset/openasl`,
+`processing.enabled` defaults to `false`, and the override disables shard
+output. Create a job under `configs/jobs/` to process the resulting manifest.
+
 **Setup:**
 1. Download `data/openasl-v1.0.tsv` and `data/bbox-v1.0.json` from the official OpenASL repository.
 2. Place them under `dataset/openasl/data/`, or override `dataset.source.manifest_tsv` and `dataset.source.bbox_json`.

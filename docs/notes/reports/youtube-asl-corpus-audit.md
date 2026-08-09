@@ -1,4 +1,12 @@
-I audited `/home/gorden/dataset/YouTube-ASL/origin`.
+# YouTube-ASL Corpus Audit
+
+| Field | Value |
+|---|---|
+| Date | 2026-07-30 (last benchmark update) |
+| Scope | One local YouTube-ASL mirror plus a three-video compression pilot |
+| Tooling | [`evaluate_mediapipe_compression.py`](../../../scripts/evaluate_mediapipe_compression.py), [`benchmark_nvenc_profiles.py`](../../../scripts/benchmark_nvenc_profiles.py) |
+
+The corpus audit covered the local source-video mirror used for the experiment.
 
 Scope: 10,655 `.mp4` files; 10,643 valid probes and 12 invalid/corrupt files. The repository lists 11,096 IDs, so 441 IDs are not present locally.
 
@@ -57,10 +65,12 @@ In this initial three-level HEVC-only pilot, **Base** was the best storage/quali
 
 ### Reproducibility artifacts
 
-- Results directory: `/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval/`
-- [Final analysis report](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval/mediapipe_compression_analysis.md)
-- [CSV summary](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval/mediapipe_compression_summary.csv)
-- [JSON results](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval/mediapipe_compression_results.json)
+The experiment output directory was not committed. Its `mediapipe_eval/`
+subdirectory contained:
+
+- `mediapipe_compression_analysis.md`
+- `mediapipe_compression_summary.csv`
+- `mediapipe_compression_results.json`
 - [Evaluation script](../../../scripts/evaluate_mediapipe_compression.py)
 
 ## NVENC profile benchmark and GPU-1 MediaPipe check
@@ -84,12 +94,14 @@ These numbers measure MediaPipe landmark stability, not translation accuracy. Va
 
 ### NVENC artifacts
 
-- [Benchmark report](/home/gorden/dataset/YouTube-ASL/test_output/nvenc_benchmark/README.md)
-- [Compression summary CSV](/home/gorden/dataset/YouTube-ASL/test_output/nvenc_benchmark/compression_summary.csv)
-- [Per-video size CSV](/home/gorden/dataset/YouTube-ASL/test_output/nvenc_benchmark/compression_files.csv)
-- [GPU-1 MediaPipe analysis](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval_nvenc_gpu1/mediapipe_compression_analysis.md)
-- [GPU-1 MediaPipe summary](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval_nvenc_gpu1/mediapipe_compression_summary.csv)
-- [GPU-1 MediaPipe JSON results](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval_nvenc_gpu1/mediapipe_compression_results.json)
+The uncommitted experiment output contained:
+
+- `nvenc_benchmark/README.md`
+- `nvenc_benchmark/compression_summary.csv`
+- `nvenc_benchmark/compression_files.csv`
+- `mediapipe_eval_nvenc_gpu1/mediapipe_compression_analysis.md`
+- `mediapipe_eval_nvenc_gpu1/mediapipe_compression_summary.csv`
+- `mediapipe_eval_nvenc_gpu1/mediapipe_compression_results.json`
 - [NVENC benchmark script](../../../scripts/benchmark_nvenc_profiles.py)
 
 ## CUDA-0 AV1 versus HEVC comparison
@@ -118,11 +130,13 @@ At equal numeric settings, AV1 produced roughly **2.0–4.6 percentage points le
 
 ### CUDA-0 artifacts
 
-- [GPU-0 benchmark README](/home/gorden/dataset/YouTube-ASL/test_output/nvenc_benchmark_gpu0/README.md)
-- [GPU-0 compression summary](/home/gorden/dataset/YouTube-ASL/test_output/nvenc_benchmark_gpu0/compression_summary.csv)
-- [GPU-0 per-video sizes](/home/gorden/dataset/YouTube-ASL/test_output/nvenc_benchmark_gpu0/compression_files.csv)
-- [GPU-0 AV1 MediaPipe analysis](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval_gpu0_av1_hevc/mediapipe_compression_analysis.md)
-- [GPU-0 AV1 MediaPipe summary](/home/gorden/dataset/YouTube-ASL/test_output/mediapipe_eval_gpu0_av1_hevc/mediapipe_compression_summary.csv)
+The uncommitted experiment output contained:
+
+- `nvenc_benchmark_gpu0/README.md`
+- `nvenc_benchmark_gpu0/compression_summary.csv`
+- `nvenc_benchmark_gpu0/compression_files.csv`
+- `mediapipe_eval_gpu0_av1_hevc/mediapipe_compression_analysis.md`
+- `mediapipe_eval_gpu0_av1_hevc/mediapipe_compression_summary.csv`
 
 
 ## Consolidated cross-codec comparison and top five

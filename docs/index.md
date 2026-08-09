@@ -65,3 +65,6 @@ The code does not establish answers for these contract decisions:
   How2Sign manifest after legacy-name normalization?
 - Should `video2parts` read `SOURCE_URL` (emitted by WLASL and MS-ASL) in
   addition to its current `URL` lookup for `meta.json.source_url`?
+- Should the How2Sign `video2parts` metadata fields be admitted by
+  `How2SignSourceConfig`, or should they move out of `dataset.source`? The
+  shipped parts job supplies them, but the adapter currently forbids them.
