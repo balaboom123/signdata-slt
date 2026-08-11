@@ -60,7 +60,9 @@ def resolve_annotations_csv(source: SlovoSourceConfig, video_dir: str) -> str:
 
 
 def load_annotations(path: str | Path) -> pd.DataFrame:
-    ann = pd.read_csv(path)
+    # The official release names this file ``annotations.csv`` but uses tabs;
+    # auto-detection also preserves support for repackaged comma CSV files.
+    ann = pd.read_csv(path, sep=None, engine="python")
     missing_cols = REQUIRED_COLUMNS - set(ann.columns)
     if missing_cols:
         raise ValueError(

@@ -118,9 +118,12 @@ class TestSlovoSourceConfig:
 
 
 class TestSlovoDownload:
-    def test_download_validates_release_and_annotations(self, tmp_path):
+    def test_download_validates_release_and_official_tsv_annotations(self, tmp_path):
         release_dir = tmp_path / "slovo"
         _make_release(release_dir)
+        annotations_path = release_dir / "annotations.csv"
+        annotations = pd.read_csv(annotations_path)
+        annotations.to_csv(annotations_path, sep="\t", index=False)
         cfg = _make_config(release_dir, tmp_path / "manifest.tsv")
         adapter = SlovoDataset()
         context = PipelineContext(config=cfg, dataset=adapter)
