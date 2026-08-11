@@ -152,13 +152,14 @@ class TestMSASLDownload:
         with pytest.raises(FileNotFoundError, match="MSASL_classes.json"):
             adapter.download(cfg, context)
 
-    def test_download_missing_uses_selected_splits(self, tmp_path, monkeypatch):
+    def test_download_missing_uses_selected_splits_and_subset(self, tmp_path, monkeypatch):
         ann_dir = tmp_path / "annotations"
         _write_annotations_dir(
             ann_dir,
             train=[
                 {"url": "https://youtu.be/aaaaaaaaaaa", "label": 0},
                 {"url": "https://youtu.be/bbbbbbbbbbb", "label": 1},
+                {"url": "https://youtu.be/eeeeeeeeeee", "label": 1000},
             ],
             val=[
                 {"url": "https://youtu.be/ccccccccccc", "label": 0},

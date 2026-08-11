@@ -22,7 +22,7 @@ class OpenASLSourceConfig(BaseModel):
 
     manifest_tsv: str = ""
     bbox_json: str = ""
-    text_column: str = "en"
+    text_column: str = "raw-text"
     availability_policy: AvailabilityPolicy = "drop_unavailable"
     # Same vcodec-outranks-size trap as youtube_asl; see DEFAULT_DOWNLOAD_FORMAT.
     download_format: str = (
@@ -47,7 +47,7 @@ def read_manifest_tsv(source: OpenASLSourceConfig) -> pd.DataFrame:
     path = source.manifest_tsv
     if not path or not Path(path).exists():
         raise FileNotFoundError(f"OpenASL manifest TSV not found: {path}")
-    return pd.read_csv(path, delimiter="\t")
+    return pd.read_csv(path, delimiter="\t", low_memory=False)
 
 
 def download(

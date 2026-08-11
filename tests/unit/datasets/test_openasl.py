@@ -80,7 +80,7 @@ class TestOpenASLSourceConfig:
 
         assert isinstance(source, OpenASLSourceConfig)
         assert source.manifest_tsv == "data/openasl.tsv"
-        assert source.text_column == "en"
+        assert source.text_column == "raw-text"
         assert source.bbox_json == ""
         assert source.availability_policy == "drop_unavailable"
         assert source.text_processing.fix_encoding is True
@@ -139,15 +139,15 @@ class TestOpenASLBuildManifest:
 
     def _write_tsv(self, path, data, columns=None):
         if columns is None:
-            columns = ["vid", "yid", "start", "end", "en"]
+            columns = ["vid", "yid", "start", "end", "raw-text"]
         df = pd.DataFrame(data, columns=columns)
         df.to_csv(path, sep="\t", index=False)
 
     def test_basic_manifest(self, tmp_path):
         tsv_path = tmp_path / "openasl.tsv"
         self._write_tsv(tsv_path, [
-            ["seg001", "yt_abc", 0.0, 5.0, "Hello world"],
-            ["seg002", "yt_abc", 5.0, 10.0, "Second sentence"],
+            ["seg001", "yt_abc", "00:00:00.000", "00:00:05.000", "Hello world"],
+            ["seg002", "yt_abc", "00:00:05.000", "00:00:10.000", "Second sentence"],
             ["seg003", "yt_def", 0.0, 3.0, "Another video"],
         ])
 
@@ -308,7 +308,7 @@ class TestOpenASLBuildManifest:
         pd.DataFrame({
             "vid": ["s1"], "yid": ["yt1"],
             "start": [0.0], "end": [1.0],
-            "en": ["Text"],
+            "raw-text": ["Text"],
             "split": ["train"],
             "signer_id": ["signer_42"],
         }).to_csv(tsv_path, sep="\t", index=False)
@@ -366,7 +366,7 @@ class TestOpenASLBboxMerge:
         pd.DataFrame({
             "vid": ["s1", "s2"], "yid": ["yt1", "yt1"],
             "start": [0.0, 5.0], "end": [5.0, 10.0],
-            "en": ["A", "B"],
+            "raw-text": ["A", "B"],
         }).to_csv(tsv_path, sep="\t", index=False)
 
         bbox_path = tmp_path / "bbox.json"
@@ -404,7 +404,7 @@ class TestOpenASLBboxMerge:
         pd.DataFrame({
             "vid": ["s1"], "yid": ["yt1"],
             "start": [0.0], "end": [1.0],
-            "en": ["Text"],
+            "raw-text": ["Text"],
         }).to_csv(tsv_path, sep="\t", index=False)
 
         bbox_path = tmp_path / "bbox.json"
@@ -438,7 +438,7 @@ class TestOpenASLBboxMerge:
         pd.DataFrame({
             "vid": ["s1"], "yid": ["yt1"],
             "start": [0.0], "end": [1.0],
-            "en": ["Text"],
+            "raw-text": ["Text"],
         }).to_csv(tsv_path, sep="\t", index=False)
 
         manifest_path = tmp_path / "manifest.csv"
@@ -461,7 +461,7 @@ class TestOpenASLBboxMerge:
         pd.DataFrame({
             "vid": ["s1"], "yid": ["yt1"],
             "start": [0.0], "end": [1.0],
-            "en": ["Text"],
+            "raw-text": ["Text"],
         }).to_csv(tsv_path, sep="\t", index=False)
 
         manifest_path = tmp_path / "manifest.csv"
@@ -665,7 +665,7 @@ class TestAvailabilityPolicy:
 
     def _write_tsv(self, path, data, columns=None):
         if columns is None:
-            columns = ["vid", "yid", "start", "end", "en"]
+            columns = ["vid", "yid", "start", "end", "raw-text"]
         df = pd.DataFrame(data, columns=columns)
         df.to_csv(path, sep="\t", index=False)
 

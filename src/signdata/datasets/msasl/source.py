@@ -68,6 +68,16 @@ def get_selected_splits(source: MSASLSourceConfig) -> tuple[str, ...]:
     return SPLITS if source.split == "all" else (source.split,)
 
 
+def iter_selected_entries(source: MSASLSourceConfig):
+    """Yield split entries selected by both split and vocabulary subset."""
+    ann_dir = Path(source.annotations_dir)
+    for split in get_selected_splits(source):
+        for entry in load_split_json(ann_dir, split):
+            if source.subset and int(entry["label"]) >= source.subset:
+                continue
+            yield split, entry
+
+
 def validate(
     source: MSASLSourceConfig,
     config,
@@ -115,8 +125,7 @@ def download_missing(
     load_classes_json(ann_dir)
     all_video_ids = {
         extract_video_id(entry["url"])
-        for split in get_selected_splits(source)
-        for entry in load_split_json(ann_dir, split)
+        for _, entry in iter_selected_entries(source)
     }
 
     existing = all_video_ids & get_existing_video_ids(video_dir, recursive=True)

@@ -12,6 +12,26 @@ from ...utils.manifest import write_manifest
 from .source import OpenASLSourceConfig, read_manifest_tsv
 
 
+def _parse_timestamps(series: pd.Series, column: str) -> pd.Series:
+    """Parse numeric seconds or official HH:MM:SS timestamps."""
+    seconds = pd.to_numeric(series, errors="coerce")
+    timestamp_rows = seconds.isna() & series.notna()
+    if timestamp_rows.any():
+        parsed = pd.to_timedelta(
+            series.loc[timestamp_rows].astype(str), errors="coerce"
+        ).dt.total_seconds()
+        seconds.loc[timestamp_rows] = parsed
+
+    invalid = seconds.isna()
+    if invalid.any():
+        examples = series.loc[invalid].astype(str).head(5).tolist()
+        raise ValueError(
+            f"OpenASL TSV has {int(invalid.sum())} invalid {column!r} "
+            f"timestamp value(s). First 5: {examples}"
+        )
+    return seconds.astype(float)
+
+
 def build(config, source: OpenASLSourceConfig, log: logging.Logger) -> pd.DataFrame:
     """Build canonical manifest from OpenASL TSV."""
     tsv = read_manifest_tsv(source)
@@ -37,8 +57,8 @@ def build(config, source: OpenASLSourceConfig, log: logging.Logger) -> pd.DataFr
     df = pd.DataFrame({
         "SAMPLE_ID": tsv["vid"].astype(str),
         "VIDEO_ID": tsv["yid"].astype(str),
-        "START": tsv["start"].astype(float),
-        "END": tsv["end"].astype(float),
+        "START": _parse_timestamps(tsv["start"], "start"),
+        "END": _parse_timestamps(tsv["end"], "end"),
     })
 
     if has_text:

@@ -11,9 +11,8 @@ from ...utils.manifest import write_manifest
 from .source import (
     MSASLSourceConfig,
     extract_video_id,
-    get_selected_splits,
+    iter_selected_entries,
     load_classes_json,
-    load_split_json,
 )
 
 _VIDEO_EXTENSIONS = {".mp4", ".webm", ".mkv", ".avi", ".mov"}
@@ -47,12 +46,7 @@ def build(config, source: MSASLSourceConfig) -> pd.DataFrame:
 
     class_lookup = _load_class_lookup(ann_dir)
     rel_path_lookup = _index_video_rel_paths(config.paths.videos)
-    selected_entries = [
-        (split, entry)
-        for split in get_selected_splits(source)
-        for entry in load_split_json(ann_dir, split)
-        if not source.subset or int(entry["label"]) < source.subset
-    ]
+    selected_entries = list(iter_selected_entries(source))
     video_id_counts = Counter(
         extract_video_id(str(entry["url"])) for _, entry in selected_entries
     )
