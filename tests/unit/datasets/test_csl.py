@@ -157,6 +157,24 @@ class TestCSLSourceConfig:
 
 
 class TestCSLDownload:
+    def test_missing_release_explains_agreement_gate(self, tmp_path):
+        release_dir = tmp_path / "missing-csl"
+        cfg = _make_config(
+            release_dir,
+            tmp_path / "manifest.tsv",
+            paths={"root": str(release_dir), "videos": str(tmp_path / "videos")},
+        )
+        adapter = CSLDataset()
+        context = PipelineContext(config=cfg, dataset=adapter)
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            adapter.download(cfg, context)
+
+        message = str(exc_info.value)
+        assert "universities and research institutes" in message
+        assert "full-time staff member" in message
+        assert "student signatures are not accepted" in message
+
     def test_validate_mode_uses_rgb_video_dir(self, tmp_path, monkeypatch):
         release_dir = tmp_path / "release"
         _write_corpus(release_dir / "corpus.txt", [("000000", "你好")])

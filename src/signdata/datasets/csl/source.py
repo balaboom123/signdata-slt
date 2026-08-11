@@ -154,8 +154,10 @@ def prepare(source: CSLSourceConfig, config, log: logging.Logger) -> dict:
     if not release_dir.exists():
         raise FileNotFoundError(
             f"CSL release directory not found: {release_dir}\n"
-            "CSL requires manual download. "
-            "See https://ustc-slr.github.io/datasets/2015_csl/"
+            "CSL access is limited to universities and research institutes. "
+            "The release agreement must be signed by a full-time staff member; "
+            "student signatures are not accepted. Follow the submission instructions "
+            "at https://ustc-slr.github.io/datasets/2015_csl/"
         )
 
     corpus_path = resolve_corpus_file(source, release_dir, log)

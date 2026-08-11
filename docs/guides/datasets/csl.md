@@ -15,7 +15,7 @@ python -m signdata run configs/jobs/csl/video.yaml
 ```
 
 **Setup:**
-1. Request access from the official USTC page: download the release agreement, sign it, and email it as instructed at [ustc-slr.github.io/datasets/2015_csl](https://ustc-slr.github.io/datasets/2015_csl/).
+1. Request research access from the official USTC page: download the release agreement, have it signed by a full-time staff member (student signatures are not accepted), and email the scanned agreement with the required recipients copied as instructed at [ustc-slr.github.io/datasets/2015_csl](https://ustc-slr.github.io/datasets/2015_csl/).
 2. Unpack the release under `dataset/csl/` so the corpus file lives at `dataset/csl/corpus.txt` and RGB data lives under `dataset/csl/color/`, or override `dataset.source.release_dir`.
 3. Run the normal CSL job. `dataset.download` is intentionally simple:
    it only validates a local release and, when needed, materializes frame folders into `paths.videos`.
