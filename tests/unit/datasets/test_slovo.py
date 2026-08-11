@@ -150,9 +150,25 @@ class TestSlovoDownload:
 
 
 class TestSlovoBuildManifest:
-    def test_build_manifest_from_annotations(self, tmp_path, monkeypatch):
+    @pytest.mark.parametrize(
+        ("nested", "expected_rel_paths"),
+        [
+            (False, ["clip_train.mp4", "clip_test.mp4"]),
+            (True, ["train/clip_train.mp4", "test/clip_test.mp4"]),
+        ],
+    )
+    def test_build_manifest_from_annotations(
+        self, tmp_path, monkeypatch, nested, expected_rel_paths,
+    ):
         release_dir = tmp_path / "slovo"
         _make_release(release_dir)
+        if nested:
+            for split, video_id in (("train", "clip_train"), ("test", "clip_test")):
+                split_dir = release_dir / split
+                split_dir.mkdir()
+                (release_dir / f"{video_id}.mp4").rename(
+                    split_dir / f"{video_id}.mp4"
+                )
         manifest_path = tmp_path / "manifest.tsv"
         cfg = _make_config(release_dir, manifest_path)
 
@@ -165,7 +181,7 @@ class TestSlovoBuildManifest:
 
         df = context.manifest_df
         assert list(df["VIDEO_ID"]) == ["clip_train", "clip_test"]
-        assert list(df["REL_PATH"]) == ["clip_train.mp4", "clip_test.mp4"]
+        assert list(df["REL_PATH"]) == expected_rel_paths
         assert list(df["SPLIT"]) == ["train", "test"]
         assert list(df["TEXT"]) == ["hello", "thanks"]
         assert list(df["SIGNER_ID"]) == ["signer_a", "signer_b"]

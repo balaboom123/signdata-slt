@@ -51,12 +51,15 @@ def build(config, source: SlovoSourceConfig, log: logging.Logger) -> pd.DataFram
     rel_paths: list[str] = []
 
     attachment_ids = ann["attachment_id"].astype(str)
-    for attachment_id in attachment_ids:
-        rel_path = f"{attachment_id}.mp4"
-        video_path = str(Path(video_dir) / rel_path)
-        durations.append(get_video_duration(video_path))
-        fps_values.append(get_video_fps(video_path))
-        rel_paths.append(rel_path)
+    video_root = Path(video_dir)
+    for attachment_id, split in zip(attachment_ids, ann["_split"], strict=True):
+        filename = f"{attachment_id}.mp4"
+        nested_path = video_root / str(split) / filename
+        flat_path = video_root / filename
+        video_path = nested_path if nested_path.exists() else flat_path
+        durations.append(get_video_duration(str(video_path)))
+        fps_values.append(get_video_fps(str(video_path)))
+        rel_paths.append(video_path.relative_to(video_root).as_posix())
 
     df = pd.DataFrame({
         "SAMPLE_ID": attachment_ids,
