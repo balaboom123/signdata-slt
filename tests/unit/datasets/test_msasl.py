@@ -465,6 +465,41 @@ class TestMSASLBuildManifest:
         }
         assert "Dropped 1 MS-ASL annotation" in caplog.text
 
+    def test_invalid_sibling_does_not_force_sample_specific_path(self, tmp_path):
+        ann_dir = tmp_path / "annotations"
+        _write_annotations_dir(
+            ann_dir,
+            train=[
+                {
+                    "url": "https://youtu.be/abcdefghijk",
+                    "start_time": 1.0,
+                    "end_time": 1.0,
+                    "label": 0,
+                },
+                {
+                    "url": "https://youtu.be/abcdefghijk",
+                    "start_time": 2.0,
+                    "end_time": 3.0,
+                    "label": 0,
+                },
+            ],
+            classes=["hello"],
+        )
+        video_dir = tmp_path / "videos"
+        video_dir.mkdir()
+        (video_dir / "abcdefghijk.mp4").touch()
+        manifest_path = tmp_path / "manifest.tsv"
+        cfg = _make_config(
+            ann_dir,
+            video_dir,
+            manifest_path,
+            source={"split": "train", "download_mode": "validate"},
+        )
+
+        context = MSASLDataset().build_manifest(cfg, self._make_context(cfg))
+
+        assert list(context.manifest_df["REL_PATH"]) == ["abcdefghijk.mp4"]
+
     def test_build_manifest_marks_unavailable_with_rel_path(self, tmp_path):
         ann_dir = tmp_path / "annotations"
         _write_annotations_dir(

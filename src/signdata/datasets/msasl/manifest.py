@@ -48,7 +48,7 @@ def build(config, source: MSASLSourceConfig) -> pd.DataFrame:
 
     class_lookup = _load_class_lookup(ann_dir)
     rel_path_lookup = _index_video_rel_paths(config.paths.videos)
-    selected_entries = list(iter_selected_entries(source))
+    selected_entries = _filter_valid_entries(list(iter_selected_entries(source)))
     video_id_counts = Counter(
         extract_video_id(str(entry["url"])) for _, entry in selected_entries
     )
@@ -66,7 +66,6 @@ def build(config, source: MSASLSourceConfig) -> pd.DataFrame:
     ]
 
     df = pd.DataFrame.from_records(rows, columns=_MANIFEST_COLUMNS)
-    df = _drop_invalid_intervals(df)
     df = _disambiguate_sample_ids(df)
 
     video_dir = config.paths.videos
@@ -77,16 +76,20 @@ def build(config, source: MSASLSourceConfig) -> pd.DataFrame:
     return df
 
 
-def _drop_invalid_intervals(df: pd.DataFrame) -> pd.DataFrame:
-    valid = df["END"] > df["START"]
-    invalid_count = int((~valid).sum())
-    if not invalid_count:
-        return df
-
-    logger.warning(
-        "Dropped %d MS-ASL annotation(s) with END <= START.", invalid_count
-    )
-    return df.loc[valid].reset_index(drop=True)
+def _filter_valid_entries(
+    entries: list[tuple[str, dict[str, Any]]],
+) -> list[tuple[str, dict[str, Any]]]:
+    valid = [
+        (split, entry)
+        for split, entry in entries
+        if float(entry["end_time"]) > float(entry["start_time"])
+    ]
+    invalid_count = len(entries) - len(valid)
+    if invalid_count:
+        logger.warning(
+            "Dropped %d MS-ASL annotation(s) with END <= START.", invalid_count
+        )
+    return valid
 
 
 def _disambiguate_sample_ids(df: pd.DataFrame) -> pd.DataFrame:
