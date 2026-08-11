@@ -105,6 +105,20 @@ class TestWLASLSourceConfig:
         assert source.download_mode == "validate"
         assert source.availability_policy == "mark_unavailable"
 
+    def test_normalizes_legacy_asl_signbank_host(self):
+        legacy = (
+            "https://aslsignbank.haskins.yale.edu/dictionary/"
+            "protected_media/glossvideo/ASL/AB/ABOUT-2042.mp4"
+        )
+
+        assert wlasl_source.normalize_download_url(legacy) == (
+            "https://aslsignbank.com/dictionary/"
+            "protected_media/glossvideo/ASL/AB/ABOUT-2042.mp4"
+        )
+        assert wlasl_source.normalize_download_url(
+            "https://example.com/video.mp4"
+        ) == "https://example.com/video.mp4"
+
 
 class TestWLASLDownload:
     def test_download_validates_inputs(self, tmp_path):

@@ -14,6 +14,20 @@ from .._ingestion.availability import (
 )
 from .._ingestion.youtube import download_video_urls
 
+_LEGACY_ASL_SIGNBANK_PREFIX = "https://aslsignbank.haskins.yale.edu/"
+_CANONICAL_ASL_SIGNBANK_PREFIX = "https://aslsignbank.com/"
+
+
+def normalize_download_url(url: str) -> str:
+    """Map the obsolete Yale Signbank host to its certificate-valid host."""
+    if url.startswith(_LEGACY_ASL_SIGNBANK_PREFIX):
+        return url.replace(
+            _LEGACY_ASL_SIGNBANK_PREFIX,
+            _CANONICAL_ASL_SIGNBANK_PREFIX,
+            1,
+        )
+    return url
+
 
 class WLASLSourceConfig(BaseModel):
     """Typed config for WLASL adapter."""
@@ -108,7 +122,7 @@ def download_missing(
         url = inst.get("url", "")
         video_id = inst.get("video_id", "")
         if url and video_id:
-            video_urls[video_id] = url
+            video_urls[video_id] = normalize_download_url(str(url))
 
     all_ids = set(video_urls)
     existing = all_ids & get_existing_video_ids(video_dir)

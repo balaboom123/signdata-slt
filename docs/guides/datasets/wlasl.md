@@ -25,3 +25,7 @@ The WLASL dataset adapter supports two acquisition modes:
 - `download_mode: validate` treats files under `paths.videos` as preprocessed clips. Manifest rows keep the original `FRAME_START` / `FRAME_END` metadata, but `START=0.0` and `END` is taken from the isolated clip duration when available.
 - `download_mode: download_missing` fetches missing raw source videos from each instance `url` in `WLASL_v0.3.json` and keeps source-aligned `START` / `END` timing in the manifest.
 
+Acquisition maps the obsolete `aslsignbank.haskins.yale.edu` hostname to its
+certificate-valid canonical host, `aslsignbank.com`; TLS verification remains
+enabled.
+
