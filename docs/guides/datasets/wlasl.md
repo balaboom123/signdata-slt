@@ -27,5 +27,6 @@ The WLASL dataset adapter supports two acquisition modes:
 
 Acquisition maps the obsolete `aslsignbank.haskins.yale.edu` hostname to its
 certificate-valid canonical host, `aslsignbank.com`; TLS verification remains
-enabled.
-
+enabled. If a metadata URL returns 404, the adapter uses the stable numeric
+gloss ID embedded in the filename to inspect the public canonical gloss page
+and retries a current media URL when Signbank renamed or reorganized the gloss.

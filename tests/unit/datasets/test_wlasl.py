@@ -119,6 +119,37 @@ class TestWLASLSourceConfig:
             "https://example.com/video.mp4"
         ) == "https://example.com/video.mp4"
 
+    def test_resolves_stale_asl_signbank_media_from_gloss_page(
+        self, monkeypatch,
+    ):
+        monkeypatch.setattr(
+            wlasl_source,
+            "_fetch_asl_signbank_gloss_page",
+            lambda gloss_id: (
+                '<source src="/dictionary/protected_media/glossvideo/'
+                'ASL/DI/DISENGAGE-2411.mp4">'
+            ),
+        )
+        stale = (
+            "https://aslsignbank.haskins.yale.edu/dictionary/"
+            "protected_media/glossvideo/AV/AVOID-2411.mp4"
+        )
+
+        assert wlasl_source.resolve_stale_asl_signbank_url(
+            stale,
+            wlasl_source.logging.getLogger("test"),
+        ) == (
+            "https://aslsignbank.com/dictionary/protected_media/"
+            "glossvideo/ASL/DI/DISENGAGE-2411.mp4"
+        )
+
+    def test_stale_asl_signbank_resolution_ignores_other_hosts(self):
+        url = "https://example.com/AVOID-2411.mp4"
+        assert wlasl_source.resolve_stale_asl_signbank_url(
+            url,
+            wlasl_source.logging.getLogger("test"),
+        ) == url
+
 
 class TestWLASLDownload:
     def test_download_validates_inputs(self, tmp_path):
@@ -238,6 +269,80 @@ class TestWLASLDownload:
             "downloaded": 1,
             "errors": 0,
             "skipped": 1,
+        }
+
+    def test_download_missing_retries_stale_asl_signbank_url(
+        self, tmp_path, monkeypatch,
+    ):
+        metadata_path = tmp_path / "WLASL_v0.3.json"
+        stale_url = (
+            "https://aslsignbank.haskins.yale.edu/dictionary/"
+            "protected_media/glossvideo/AV/AVOID-2411.mp4"
+        )
+        current_url = (
+            "https://aslsignbank.com/dictionary/protected_media/"
+            "glossvideo/ASL/DI/DISENGAGE-2411.mp4"
+        )
+        _write_metadata(metadata_path, [{
+            "gloss": "avoid",
+            "instances": [{"video_id": "65115", "url": stale_url}],
+        }])
+        video_dir = tmp_path / "videos"
+        video_dir.mkdir()
+        root_dir = tmp_path / "root"
+        root_dir.mkdir()
+        calls = []
+
+        def fake_download(video_urls, video_dir_arg, **kwargs):
+            calls.append(video_urls)
+            if len(calls) == 1:
+                return {
+                    "downloaded": 0,
+                    "errors": 1,
+                    "missing": [{
+                        "VIDEO_ID": "65115",
+                        "SOURCE_URL": wlasl_source.normalize_download_url(stale_url),
+                        "REASON": "HTTP Error 404: Not Found",
+                    }],
+                    "blocked": False,
+                    "block_reason": "",
+                }
+            return {
+                "downloaded": 1,
+                "errors": 0,
+                "missing": [],
+                "blocked": False,
+                "block_reason": "",
+            }
+
+        monkeypatch.setattr(wlasl_source, "download_video_urls", fake_download)
+        monkeypatch.setattr(
+            wlasl_source,
+            "resolve_stale_asl_signbank_url",
+            lambda url, log: current_url,
+        )
+        cfg = _make_config(
+            metadata_path,
+            video_dir,
+            tmp_path / "manifest.tsv",
+            source={"download_mode": "download_missing"},
+            root_dir=root_dir,
+        )
+        adapter = WLASLDataset()
+        context = adapter.download(
+            cfg,
+            PipelineContext(config=cfg, dataset=adapter),
+        )
+
+        assert calls == [
+            {"65115": wlasl_source.normalize_download_url(stale_url)},
+            {"65115": current_url},
+        ]
+        assert context.stats["dataset.download"] == {
+            "total": 1,
+            "downloaded": 1,
+            "errors": 0,
+            "skipped": 0,
         }
 
     def test_download_missing_applies_split_and_subset_filters(self, tmp_path, monkeypatch):
