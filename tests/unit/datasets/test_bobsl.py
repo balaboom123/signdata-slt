@@ -208,6 +208,25 @@ class TestBOBSLSourceConfig:
 
 
 class TestBOBSLDownload:
+    def test_missing_release_explains_access_and_capacity(self, tmp_path):
+        video_dir = tmp_path / "videos"
+        video_dir.mkdir()
+        cfg = _make_config(
+            tmp_path / "missing-bobsl",
+            video_dir,
+            tmp_path / "manifest.tsv",
+        )
+        adapter = BOBSLDataset()
+        context = PipelineContext(config=cfg, dataset=adapter)
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            adapter.download(cfg, context)
+
+        message = str(exc_info.value)
+        assert "BBC Terms of Use" in message
+        assert "personal password" in message
+        assert "331 GB" in message
+
     def test_download_validates_release_and_videos(self, tmp_path):
         release_dir = _make_release(tmp_path)
         video_dir = tmp_path / "videos"

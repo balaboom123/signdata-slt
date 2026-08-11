@@ -15,7 +15,7 @@ python -m signdata run configs/jobs/bobsl/video.yaml
 ```
 
 **Setup:**
-1. Download and unpack the public BOBSL release under `dataset/bobsl/`, or override `dataset.source.release_dir`.
+1. Apply for access through the [official BOBSL page](https://www.robots.ox.ac.uk/~vgg/data/bobsl/), complete the BBC Terms of Use agreement, and wait for the personal download password. The interpreter-cropped MP4 release is 331 GB, so confirm archive and extraction capacity before downloading it under `dataset/bobsl/` or another `dataset.source.release_dir`.
 2. Place interpreter-cropped MP4s under `paths.videos` (the shipped jobs use `dataset/bobsl/videos/`).
 3. Keep the release metadata JSON (for example `metadata/subset2episode.json`) under the release root, or override `dataset.source.metadata_file`.
 4. Keep subtitle files under the release root. The adapter auto-discovers the common `subtitles/manually-aligned/` and `subtitles/audio-aligned-heuristic-correction/` layouts, or you can override `dataset.source.subtitles_root`.

@@ -15,7 +15,7 @@ python -m signdata run configs/jobs/autsl/video.yaml
 ```
 
 **Setup:**
-1. Download and extract the official AUTSL challenge release under `dataset/autsl/`, or override `dataset.source.release_dir`.
+1. Register or sign in on the [official AUTSL ChaLearn page](https://chalearnlap.cvc.uab.es/dataset/40/description/), accept the challenge terms, and download the encrypted train, validation, and test archives from the account-only file listings. Extract them under `dataset/autsl/`, or override `dataset.source.release_dir`. The archive keys are published on the corresponding ChaLearn data-description pages.
 2. Keep the split directories under the release root, for example `dataset/autsl/train/`, `dataset/autsl/validation/`, and `dataset/autsl/test/`.
 3. Ensure the release contains the class-ID correspondence CSV (for example `SignList*.csv`) plus `train_labels.csv` and `val_labels.csv`. The shipped configs assume the common challenge layout and auto-discover these files.
 4. The shipped AUTSL jobs intentionally set `paths.videos: dataset/autsl` instead of `dataset/autsl/videos` because manifest rows use split-relative paths such as `train/signer0_sample1_color.mp4`.

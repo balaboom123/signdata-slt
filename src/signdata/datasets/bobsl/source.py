@@ -85,7 +85,10 @@ def validate_release(
     if not release_dir.exists():
         raise FileNotFoundError(
             f"BOBSL release directory not found: {release_dir}\n"
-            "Download the BOBSL release first and set dataset.source.release_dir."
+            "BOBSL access requires an approved BBC Terms of Use agreement and "
+            "personal password from https://www.robots.ox.ac.uk/~vgg/data/bobsl/. "
+            "The required interpreter-cropped MP4 release is 331 GB; download it "
+            "first and set dataset.source.release_dir."
         )
 
     video_dir = config.paths.videos

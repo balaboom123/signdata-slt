@@ -157,6 +157,20 @@ class TestAUTSLSourceConfig:
 
 
 class TestAUTSLDownload:
+    def test_missing_release_explains_account_access(self, tmp_path):
+        release_root = tmp_path / "missing-autsl"
+        cfg = _make_config(release_root, tmp_path / "manifest.tsv")
+        adapter = AUTSLDataset()
+        context = PipelineContext(config=cfg, dataset=adapter)
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            adapter.download(cfg, context)
+
+        message = str(exc_info.value)
+        assert "chalearnlap.cvc.uab.es/dataset/40" in message
+        assert "account-only" in message
+        assert "encrypted archives" in message
+
     def test_download_validates_release_and_sets_runtime_video_dir(self, tmp_path):
         release_root = tmp_path / "autsl"
         _write_release(release_root)

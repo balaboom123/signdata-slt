@@ -1,4 +1,4 @@
-"""BSL-1K compatibility adapter built on the public BOBSL release."""
+"""BSL-1K compatibility adapter built on the access-controlled BOBSL release."""
 
 from pathlib import Path
 
@@ -9,7 +9,7 @@ from . import source as _source
 
 @register_dataset("bsl1k")
 class BSL1KDataset(BOBSLDataset):
-    """BSL-1K compatibility view over the BOBSL release."""
+    """BSL-1K compatibility view over the access-controlled BOBSL release."""
 
     name = "bsl1k"
 

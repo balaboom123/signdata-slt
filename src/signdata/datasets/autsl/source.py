@@ -143,8 +143,11 @@ def validate(
     if not release_root.exists():
         raise FileNotFoundError(
             f"AUTSL release directory not found: {release_root}\n"
-            f"Set dataset.source.release_dir (or paths.videos) to the "
-            f"extracted challenge root and try again."
+            "Register or sign in at "
+            "https://chalearnlap.cvc.uab.es/dataset/40/description/, accept the "
+            "challenge terms, download the encrypted archives from the account-only "
+            "file listings, and set dataset.source.release_dir (or paths.videos) "
+            "to the extracted challenge root."
         )
 
     selected_splits = get_selected_splits(source)
