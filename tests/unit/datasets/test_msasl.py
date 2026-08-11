@@ -380,6 +380,91 @@ class TestMSASLBuildManifest:
         assert list(df["GLOSS"]) == ["zero", "one"]
         assert list(df["SPLIT"]) == ["train", "val"]
 
+    def test_colliding_sample_ids_get_deterministic_suffix(
+        self, tmp_path, caplog,
+    ):
+        ann_dir = tmp_path / "annotations"
+        _write_annotations_dir(
+            ann_dir,
+            train=[
+                {
+                    "url": "https://www.youtube.com/watch?v=abcdefghijk",
+                    "start_time": 1.0,
+                    "end_time": 2.0,
+                    "label": 0,
+                },
+                {
+                    "url": "https://www.youtube.com/watch?v=abcdefghijk&t=2s",
+                    "start_time": 1.0,
+                    "end_time": 2.0,
+                    "label": 0,
+                },
+            ],
+            classes=["hello"],
+        )
+        video_dir = tmp_path / "videos"
+        manifest_path = tmp_path / "manifest.tsv"
+        cfg = _make_config(
+            ann_dir,
+            video_dir,
+            manifest_path,
+            source={"split": "train", "download_mode": "download_missing"},
+        )
+
+        with caplog.at_level("WARNING"):
+            context = MSASLDataset().build_manifest(
+                cfg, self._make_context(cfg)
+            )
+
+        assert list(context.manifest_df["SAMPLE_ID"]) == [
+            "train-abcdefghijk-1000-2000-0",
+            "train-abcdefghijk-1000-2000-0-dup1",
+        ]
+        assert list(context.manifest_df["REL_PATH"]) == [
+            "abcdefghijk.mp4", "abcdefghijk.mp4",
+        ]
+        assert "Disambiguated 1 colliding" in caplog.text
+
+    def test_nonpositive_interval_is_dropped(self, tmp_path, caplog):
+        ann_dir = tmp_path / "annotations"
+        _write_annotations_dir(
+            ann_dir,
+            train=[
+                {
+                    "url": "https://youtu.be/abcdefghijk",
+                    "start_time": 1.0,
+                    "end_time": 1.0,
+                    "label": 0,
+                },
+                {
+                    "url": "https://youtu.be/lmnopqrstuv",
+                    "start_time": 2.0,
+                    "end_time": 3.0,
+                    "label": 0,
+                },
+            ],
+            classes=["hello"],
+        )
+        video_dir = tmp_path / "videos"
+        manifest_path = tmp_path / "manifest.tsv"
+        cfg = _make_config(
+            ann_dir,
+            video_dir,
+            manifest_path,
+            source={"split": "train", "download_mode": "download_missing"},
+        )
+
+        with caplog.at_level("WARNING"):
+            context = MSASLDataset().build_manifest(
+                cfg, self._make_context(cfg)
+            )
+
+        assert list(context.manifest_df["VIDEO_ID"]) == ["lmnopqrstuv"]
+        assert context.stats["dataset.manifest"] == {
+            "videos": 1, "segments": 1,
+        }
+        assert "Dropped 1 MS-ASL annotation" in caplog.text
+
     def test_build_manifest_marks_unavailable_with_rel_path(self, tmp_path):
         ann_dir = tmp_path / "annotations"
         _write_annotations_dir(

@@ -1,5 +1,6 @@
 """MS-ASL manifest building."""
 
+import logging
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from .source import (
 )
 
 _VIDEO_EXTENSIONS = {".mp4", ".webm", ".mkv", ".avi", ".mov"}
+logger = logging.getLogger(__name__)
 _MANIFEST_COLUMNS = [
     "SAMPLE_ID",
     "VIDEO_ID",
@@ -64,6 +66,8 @@ def build(config, source: MSASLSourceConfig) -> pd.DataFrame:
     ]
 
     df = pd.DataFrame.from_records(rows, columns=_MANIFEST_COLUMNS)
+    df = _drop_invalid_intervals(df)
+    df = _disambiguate_sample_ids(df)
 
     video_dir = config.paths.videos
     if video_dir and Path(video_dir).is_dir():
@@ -71,6 +75,37 @@ def build(config, source: MSASLSourceConfig) -> pd.DataFrame:
 
     write_manifest(df, config.paths.manifest)
     return df
+
+
+def _drop_invalid_intervals(df: pd.DataFrame) -> pd.DataFrame:
+    valid = df["END"] > df["START"]
+    invalid_count = int((~valid).sum())
+    if not invalid_count:
+        return df
+
+    logger.warning(
+        "Dropped %d MS-ASL annotation(s) with END <= START.", invalid_count
+    )
+    return df.loc[valid].reset_index(drop=True)
+
+
+def _disambiguate_sample_ids(df: pd.DataFrame) -> pd.DataFrame:
+    occurrence = df.groupby("SAMPLE_ID", sort=False).cumcount()
+    collisions = occurrence > 0
+    collision_count = int(collisions.sum())
+    if not collision_count:
+        return df
+
+    result = df.copy()
+    result.loc[collisions, "SAMPLE_ID"] = (
+        result.loc[collisions, "SAMPLE_ID"]
+        + "-dup"
+        + occurrence.loc[collisions].astype(str)
+    )
+    logger.warning(
+        "Disambiguated %d colliding MS-ASL SAMPLE_ID value(s).", collision_count
+    )
+    return result
 
 
 def _load_class_lookup(ann_dir: Path) -> dict[int, str]:
