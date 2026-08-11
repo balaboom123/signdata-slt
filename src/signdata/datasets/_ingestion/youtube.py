@@ -12,6 +12,22 @@ class DownloadResult(TypedDict):
     downloaded: int
     errors: int
     missing: list[dict[str, str]]
+    blocked: bool
+    block_reason: str
+
+
+_HOST_BLOCK_MARKERS = (
+    "http error 429",
+    "too many requests",
+    "sign in to confirm you’re not a bot",
+    "sign in to confirm you're not a bot",
+)
+
+
+def _is_host_block_error(error: Exception) -> bool:
+    """Return whether yt-dlp reports host throttling or bot verification."""
+    message = str(error).lower()
+    return any(marker in message for marker in _HOST_BLOCK_MARKERS)
 
 
 def _build_yt_config(
@@ -66,6 +82,7 @@ def _download_targets(
     sleep_interval_requests: float = 0.0,
     sleep_interval: float = 0.0,
     max_sleep_interval: float | None = None,
+    stop_on_block: bool = False,
     log: logging.Logger,
 ) -> DownloadResult:
     """Download explicit ``(video_id, url)`` targets via yt-dlp."""
@@ -78,6 +95,7 @@ def _download_targets(
 
     downloaded = 0
     missing: list[dict[str, str]] = []
+    block_reason = ""
 
     with tqdm(targets, desc="Downloading videos", unit="video") as pbar:
         for video_id, url in pbar:
@@ -98,17 +116,27 @@ def _download_targets(
                 downloaded += 1
             except Exception as e:
                 log.error("Error downloading %s from %s: %s", video_id, url, e)
+                reason = str(e)
                 missing.append({
                     "VIDEO_ID": video_id,
                     "SOURCE_URL": url,
-                    "REASON": str(e),
+                    "REASON": reason,
                 })
+                if stop_on_block and _is_host_block_error(e):
+                    block_reason = reason
+                    log.error(
+                        "Video host blocked acquisition; stopping so the run can "
+                        "cool down and resume without repeating completed files."
+                    )
+                    break
             pbar.set_postfix(errors=len(missing))
 
     return DownloadResult(
         downloaded=downloaded,
         errors=len(missing),
         missing=missing,
+        blocked=bool(block_reason),
+        block_reason=block_reason,
     )
 
 
@@ -122,6 +150,7 @@ def download_video_urls(
     sleep_interval_requests: float = 0.0,
     sleep_interval: float = 0.0,
     max_sleep_interval: float | None = None,
+    stop_on_block: bool = False,
     log: logging.Logger,
 ) -> DownloadResult:
     """Download videos from explicit source URLs keyed by output video ID."""
@@ -134,6 +163,7 @@ def download_video_urls(
         sleep_interval_requests=sleep_interval_requests,
         sleep_interval=sleep_interval,
         max_sleep_interval=max_sleep_interval,
+        stop_on_block=stop_on_block,
         log=log,
     )
 
@@ -148,6 +178,7 @@ def download_youtube_videos(
     sleep_interval_requests: float = 0.0,
     sleep_interval: float = 0.0,
     max_sleep_interval: float | None = None,
+    stop_on_block: bool = False,
     log: logging.Logger,
 ) -> DownloadResult:
     """Download YouTube IDs via yt-dlp."""
@@ -163,5 +194,6 @@ def download_youtube_videos(
         sleep_interval_requests=sleep_interval_requests,
         sleep_interval=sleep_interval,
         max_sleep_interval=max_sleep_interval,
+        stop_on_block=stop_on_block,
         log=log,
     )

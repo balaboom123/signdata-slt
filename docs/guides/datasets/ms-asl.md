@@ -29,4 +29,6 @@ For long downloads, `sleep_interval_requests` paces extractor requests and
 `sleep_interval` / `max_sleep_interval` add a randomized delay before media
 downloads. Use one acquisition process and conservative intervals after an HTTP
 429 response; all completed files are detected and skipped when the run resumes.
+The default `stop_on_download_block: true` also exits promptly on HTTP 429 or
+bot verification so a supervisor can cool down and retry.
 

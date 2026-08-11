@@ -20,7 +20,10 @@ from signdata.datasets.youtube_asl import (
     YouTubeASLSourceConfig,
 )
 from signdata.datasets.youtube_asl.source import _download_transcripts
-from signdata.datasets._ingestion.youtube import _build_yt_config
+from signdata.datasets._ingestion.youtube import (
+    _build_yt_config,
+    _download_targets,
+)
 from signdata.datasets.how2sign import How2SignDataset, How2SignSourceConfig
 from signdata.datasets.base import DatasetAdapter
 from signdata.pipeline.context import PipelineContext
@@ -209,6 +212,47 @@ def test_yt_dlp_config_rejects_invalid_sleep_range(tmp_path):
             sleep_interval=5.0,
             max_sleep_interval=2.0,
         )
+
+
+def test_yt_dlp_stops_on_host_block(monkeypatch, tmp_path):
+    calls = []
+
+    class FakeYoutubeDL:
+        def __init__(self, _config):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def extract_info(self, url, download):
+            calls.append((url, download))
+            if "blocked" in url:
+                raise RuntimeError("HTTP Error 429: Too Many Requests")
+            return {"id": url}
+
+    root = types.ModuleType("yt_dlp")
+    root.YoutubeDL = FakeYoutubeDL
+    utils = types.ModuleType("yt_dlp.utils")
+    utils.parse_bytes = lambda _value: 5_000_000
+    monkeypatch.setitem(sys.modules, "yt_dlp", root)
+    monkeypatch.setitem(sys.modules, "yt_dlp.utils", utils)
+
+    result = _download_targets(
+        [("ok", "ok"), ("blocked", "blocked"), ("unreached", "unreached")],
+        str(tmp_path),
+        download_format="best",
+        stop_on_block=True,
+        log=logging.getLogger("test"),
+    )
+
+    assert calls == [("ok", True), ("blocked", True)]
+    assert result["downloaded"] == 1
+    assert result["errors"] == 1
+    assert result["blocked"] is True
+    assert "429" in result["block_reason"]
 
 
 class TestYouTubeASLTranscriptDownload:

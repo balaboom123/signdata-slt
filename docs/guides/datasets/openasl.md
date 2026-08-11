@@ -27,4 +27,6 @@ normal video processing stages; the manifest stores timing and bbox metadata.
 For long downloads, `sleep_interval_requests` paces extractor requests and
 `sleep_interval` / `max_sleep_interval` add a randomized delay before each
 media download. Completed source videos are skipped when acquisition resumes.
+The default `stop_on_download_block: true` exits promptly on HTTP 429 or bot
+verification instead of exhausting the remaining source IDs.
 

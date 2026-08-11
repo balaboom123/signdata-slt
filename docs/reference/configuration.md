@@ -151,6 +151,7 @@ If omitted, the loader derives these defaults from `paths.root`:
 | `sleep_interval_requests` | `float` | `0.0` | Delay in seconds between yt-dlp extractor requests; raise this when a video host throttles acquisition |
 | `sleep_interval` | `float` | `0.0` | Minimum delay in seconds before each media download |
 | `max_sleep_interval` | `float \| null` | `null` | Optional upper bound for randomized per-download delay; must be at least `sleep_interval` |
+| `stop_on_download_block` | `bool` | `true` | Stop resumable acquisition promptly when a video host reports HTTP 429 or bot verification instead of treating every remaining video as unavailable |
 | `transcript_proxy_http` | `str` | `null` | Optional HTTP proxy for `youtube-transcript-api` |
 | `transcript_proxy_https` | `str` | `null` | Optional HTTPS proxy for `youtube-transcript-api` |
 | `stop_on_transcript_block` | `bool` | `true` | Stop transcript downloading after `RequestBlocked`/`IpBlocked` |

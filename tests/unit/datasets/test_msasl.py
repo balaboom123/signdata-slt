@@ -97,6 +97,7 @@ class TestMSASLSourceConfig:
         assert source.subset == 1000
         assert source.download_mode == "validate"
         assert source.availability_policy == "drop_unavailable"
+        assert source.stop_on_download_block is True
 
     def test_custom_options(self, tmp_path):
         ann_dir = tmp_path / "annotations"
@@ -206,12 +207,56 @@ class TestMSASLDownload:
 
         assert captured["video_ids"] == ["bbbbbbbbbbb"]
         assert captured["video_dir"] == str(video_dir)
+        assert captured["kwargs"]["stop_on_block"] is True
         assert context.stats["dataset.download"] == {
             "total": 2,
             "downloaded": 1,
             "errors": 0,
             "skipped": 1,
         }
+
+    def test_host_block_writes_report_and_raises(self, tmp_path, monkeypatch):
+        ann_dir = tmp_path / "annotations"
+        _write_annotations_dir(
+            ann_dir,
+            train=[{"url": "https://youtu.be/abcdefghijk", "label": 0}],
+        )
+        video_dir = tmp_path / "videos"
+        root_dir = tmp_path / "root"
+        manifest_path = tmp_path / "manifest.tsv"
+
+        monkeypatch.setattr(
+            msasl_source,
+            "download_youtube_videos",
+            lambda *_args, **_kwargs: {
+                "downloaded": 0,
+                "errors": 1,
+                "missing": [{
+                    "VIDEO_ID": "abcdefghijk",
+                    "REASON": "HTTP Error 429: Too Many Requests",
+                }],
+                "blocked": True,
+                "block_reason": "HTTP Error 429: Too Many Requests",
+            },
+        )
+        cfg = _make_config(
+            ann_dir,
+            video_dir,
+            manifest_path,
+            source={"download_mode": "download_missing", "split": "train"},
+            root_dir=root_dir,
+        )
+        context = PipelineContext(config=cfg, dataset=MSASLDataset())
+
+        with pytest.raises(RuntimeError, match="Video host blocked MS-ASL"):
+            MSASLDataset().download(cfg, context)
+
+        report_dir = root_dir / "acquire_report"
+        report = json.loads((report_dir / "download_report.json").read_text())
+        assert report == {
+            "total": 1, "downloaded": 0, "errors": 1, "skipped": 0,
+        }
+        assert "429" in (report_dir / "missing_videos.csv").read_text()
 
 
 class TestMSASLBuildManifest:

@@ -34,6 +34,7 @@ class WLASLSourceConfig(BaseModel):
     sleep_interval_requests: float = Field(default=0.0, ge=0)
     sleep_interval: float = Field(default=0.0, ge=0)
     max_sleep_interval: float | None = Field(default=None, ge=0)
+    stop_on_download_block: bool = True
 
 
 def iter_filtered_instances(entries: list[dict[str, Any]], source: WLASLSourceConfig):
@@ -125,6 +126,7 @@ def download_missing(
             sleep_interval_requests=source.sleep_interval_requests,
             sleep_interval=source.sleep_interval,
             max_sleep_interval=source.max_sleep_interval,
+            stop_on_block=source.stop_on_download_block,
             log=log,
         )
     else:
@@ -138,6 +140,13 @@ def download_missing(
     }
     report_dir = Path(config.paths.root) / "acquire_report"
     write_acquire_report(report_dir, stats, result["missing"])
+
+    if result.get("blocked"):
+        raise RuntimeError(
+            "Video host blocked WLASL acquisition. Retry after a cooldown; "
+            "completed files will be skipped. "
+            f"See {report_dir}/missing_videos.csv for the triggering error."
+        )
 
     if source.availability_policy == "fail_fast" and result["errors"] > 0:
         raise RuntimeError(
