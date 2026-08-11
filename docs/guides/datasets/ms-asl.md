@@ -25,3 +25,8 @@ The MS-ASL dataset adapter supports two acquisition modes:
 - `download_mode: validate` treats files under `paths.videos` as the local clip corpus and writes per-sample `REL_PATH` values into the manifest.
 - `download_mode: download_missing` extracts YouTube IDs from the selected split JSON files and downloads any missing videos into `paths.videos`.
 
+For long downloads, `sleep_interval_requests` paces extractor requests and
+`sleep_interval` / `max_sleep_interval` add a randomized delay before media
+downloads. Use one acquisition process and conservative intervals after an HTTP
+429 response; all completed files are detected and skipped when the run resumes.
+

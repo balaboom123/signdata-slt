@@ -110,6 +110,9 @@ class TestMSASLSourceConfig:
                     "subset": 5,
                     "download_mode": "download_missing",
                     "availability_policy": "mark_unavailable",
+                    "sleep_interval_requests": 3.0,
+                    "sleep_interval": 5.0,
+                    "max_sleep_interval": 9.0,
                 },
             },
         )
@@ -119,6 +122,9 @@ class TestMSASLSourceConfig:
         assert source.subset == 5
         assert source.download_mode == "download_missing"
         assert source.availability_policy == "mark_unavailable"
+        assert source.sleep_interval_requests == 3.0
+        assert source.sleep_interval == 5.0
+        assert source.max_sleep_interval == 9.0
 
 
 class TestMSASLDownload:

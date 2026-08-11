@@ -34,6 +34,9 @@ class OpenASLSourceConfig(BaseModel):
     )
     rate_limit: str = "5M"
     concurrent_fragments: int = 5
+    sleep_interval_requests: float = Field(default=0.0, ge=0)
+    sleep_interval: float = Field(default=0.0, ge=0)
+    max_sleep_interval: float | None = Field(default=None, ge=0)
     text_processing: TextProcessingConfig = Field(
         default_factory=TextProcessingConfig
     )
@@ -86,6 +89,9 @@ def download(
             download_format=source.download_format,
             rate_limit=source.rate_limit,
             concurrent_fragments=source.concurrent_fragments,
+            sleep_interval_requests=source.sleep_interval_requests,
+            sleep_interval=source.sleep_interval,
+            max_sleep_interval=source.max_sleep_interval,
             log=log,
         )
     else:

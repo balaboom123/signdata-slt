@@ -179,10 +179,16 @@ def test_yt_dlp_config_uses_python_api_keys(tmp_path):
         download_format="best",
         rate_limit=5_000_000,
         concurrent_fragments=3,
+        sleep_interval_requests=2.5,
+        sleep_interval=4.0,
+        max_sleep_interval=8.0,
     )
 
     assert config["ratelimit"] == 5_000_000
     assert config["concurrent_fragment_downloads"] == 3
+    assert config["sleep_interval_requests"] == 2.5
+    assert config["sleep_interval"] == 4.0
+    assert config["max_sleep_interval"] == 8.0
     assert "nocheckcertificate" not in config
     assert all("-" not in key for key in config)
     # FFmpegVideoConvertor re-encodes; only the remuxer leaves the downloaded
@@ -190,6 +196,19 @@ def test_yt_dlp_config_uses_python_api_keys(tmp_path):
     assert [pp["key"] for pp in config["postprocessors"]] == [
         "FFmpegVideoRemuxer"
     ]
+
+
+def test_yt_dlp_config_rejects_invalid_sleep_range(tmp_path):
+    with pytest.raises(ValueError, match="max_sleep_interval"):
+        _build_yt_config(
+            str(tmp_path),
+            "video-id",
+            download_format="best",
+            rate_limit=5_000_000,
+            concurrent_fragments=1,
+            sleep_interval=5.0,
+            max_sleep_interval=2.0,
+        )
 
 
 class TestYouTubeASLTranscriptDownload:

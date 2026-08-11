@@ -21,8 +21,18 @@ def _build_yt_config(
     download_format: str,
     rate_limit: int,
     concurrent_fragments: int,
+    sleep_interval_requests: float = 0.0,
+    sleep_interval: float = 0.0,
+    max_sleep_interval: float | None = None,
 ) -> dict[str, object]:
-    return {
+    if sleep_interval_requests < 0 or sleep_interval < 0:
+        raise ValueError("yt-dlp sleep intervals must be non-negative")
+    if max_sleep_interval is not None and max_sleep_interval < sleep_interval:
+        raise ValueError(
+            "max_sleep_interval must be greater than or equal to sleep_interval"
+        )
+
+    config: dict[str, object] = {
         "format": download_format,
         "merge_output_format": "mp4",
         "postprocessors": [
@@ -38,7 +48,12 @@ def _build_yt_config(
         "http_chunk_size": 10485760,
         "noplaylist": True,
         "concurrent_fragment_downloads": concurrent_fragments,
+        "sleep_interval_requests": sleep_interval_requests,
+        "sleep_interval": sleep_interval,
     }
+    if max_sleep_interval is not None:
+        config["max_sleep_interval"] = max_sleep_interval
+    return config
 
 
 def _download_targets(
@@ -48,6 +63,9 @@ def _download_targets(
     download_format: str,
     rate_limit: str = "5M",
     concurrent_fragments: int = 5,
+    sleep_interval_requests: float = 0.0,
+    sleep_interval: float = 0.0,
+    max_sleep_interval: float | None = None,
     log: logging.Logger,
 ) -> DownloadResult:
     """Download explicit ``(video_id, url)`` targets via yt-dlp."""
@@ -70,6 +88,9 @@ def _download_targets(
                 download_format=download_format,
                 rate_limit=parsed_rate_limit,
                 concurrent_fragments=concurrent_fragments,
+                sleep_interval_requests=sleep_interval_requests,
+                sleep_interval=sleep_interval,
+                max_sleep_interval=max_sleep_interval,
             )
             try:
                 with YoutubeDL(yt_config) as yt:
@@ -98,6 +119,9 @@ def download_video_urls(
     download_format: str,
     rate_limit: str = "5M",
     concurrent_fragments: int = 5,
+    sleep_interval_requests: float = 0.0,
+    sleep_interval: float = 0.0,
+    max_sleep_interval: float | None = None,
     log: logging.Logger,
 ) -> DownloadResult:
     """Download videos from explicit source URLs keyed by output video ID."""
@@ -107,6 +131,9 @@ def download_video_urls(
         download_format=download_format,
         rate_limit=rate_limit,
         concurrent_fragments=concurrent_fragments,
+        sleep_interval_requests=sleep_interval_requests,
+        sleep_interval=sleep_interval,
+        max_sleep_interval=max_sleep_interval,
         log=log,
     )
 
@@ -118,6 +145,9 @@ def download_youtube_videos(
     download_format: str,
     rate_limit: str = "5M",
     concurrent_fragments: int = 5,
+    sleep_interval_requests: float = 0.0,
+    sleep_interval: float = 0.0,
+    max_sleep_interval: float | None = None,
     log: logging.Logger,
 ) -> DownloadResult:
     """Download YouTube IDs via yt-dlp."""
@@ -130,5 +160,8 @@ def download_youtube_videos(
         download_format=download_format,
         rate_limit=rate_limit,
         concurrent_fragments=concurrent_fragments,
+        sleep_interval_requests=sleep_interval_requests,
+        sleep_interval=sleep_interval,
+        max_sleep_interval=max_sleep_interval,
         log=log,
     )

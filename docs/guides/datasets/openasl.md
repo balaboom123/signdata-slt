@@ -24,3 +24,7 @@ OpenASL's official preprocessing also trims and spatially crops clips with the
 provided bbox file. In this repo that happens after the first stage through the
 normal video processing stages; the manifest stores timing and bbox metadata.
 
+For long downloads, `sleep_interval_requests` paces extractor requests and
+`sleep_interval` / `max_sleep_interval` add a randomized delay before each
+media download. Completed source videos are skipped when acquisition resumes.
+

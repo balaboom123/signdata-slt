@@ -148,6 +148,9 @@ If omitted, the loader derives these defaults from `paths.root`:
 | `download_format` | `str` | `"worstvideo[...]+worstaudio/.../best"` | yt-dlp format selector |
 | `rate_limit` | `str` | `"5M"` | Download rate limit |
 | `concurrent_fragments` | `int` | `5` | Parallel download fragments |
+| `sleep_interval_requests` | `float` | `0.0` | Delay in seconds between yt-dlp extractor requests; raise this when a video host throttles acquisition |
+| `sleep_interval` | `float` | `0.0` | Minimum delay in seconds before each media download |
+| `max_sleep_interval` | `float \| null` | `null` | Optional upper bound for randomized per-download delay; must be at least `sleep_interval` |
 | `transcript_proxy_http` | `str` | `null` | Optional HTTP proxy for `youtube-transcript-api` |
 | `transcript_proxy_https` | `str` | `null` | Optional HTTPS proxy for `youtube-transcript-api` |
 | `stop_on_transcript_block` | `bool` | `true` | Stop transcript downloading after `RequestBlocked`/`IpBlocked` |
