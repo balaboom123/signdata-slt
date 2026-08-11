@@ -157,7 +157,7 @@ If omitted, the loader derives these defaults from `paths.root`:
 | `manifest_csv` | `str` | `""` | Existing manifest path for datasets such as How2Sign |
 | `manifest_tsv` | `str` | `""` | Official TSV manifest path for datasets such as OpenASL |
 | `annotations_csv` | `str` | `""` | Official annotation CSV path for datasets such as SLoVo |
-| `text_column` | `str` | `"en"` | Source text column selected by OpenASL |
+| `text_column` | `str` | `"raw-text"` | Source text column selected by OpenASL |
 | `bbox_json` | `str` | `""` | Optional bounding-box JSON path for datasets such as OpenASL |
 | `split` | `str` | `"all"` | Split label for datasets such as WLASL, MS-ASL, and AUTSL |
 | `allow_unlabeled` | `bool` | `false` | Include AUTSL videos when split label files are unavailable |

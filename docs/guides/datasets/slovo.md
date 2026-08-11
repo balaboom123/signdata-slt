@@ -18,9 +18,9 @@ output. Create a job under `configs/jobs/` to process the resulting manifest.
 **Setup:**
 1. Download and extract the official trimmed SLoVo release under `dataset/slovo/`, or override `dataset.source.release_dir`.
 2. Keep the official `annotations.csv` in the release root, or override `dataset.source.annotations_csv`.
-3. Keep videos named by `attachment_id`, for example `dataset/slovo/<attachment_id>.mp4`.
+3. Keep videos named by `attachment_id`. The official archive stores them under `dataset/slovo/train/<attachment_id>.mp4` and `dataset/slovo/test/<attachment_id>.mp4`; a repackaged flat release root is also accepted.
 
-The SLoVo adapter validates the local release and builds one row per annotation.
+The SLoVo adapter auto-detects the official tab-separated annotation format, validates the local release, and builds one row per annotation.
 It maps the official `train` boolean to `SPLIT=train|test`, uses `text` as both
 `GLOSS` and `TEXT`, and derives `CLASS_ID` values from the annotation labels by
 default.
