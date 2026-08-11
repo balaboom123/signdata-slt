@@ -115,8 +115,11 @@ def prepare(
     if not release_dir.exists():
         raise FileNotFoundError(
             f"PHOENIX release directory not found: {release_dir}\n"
-            "RWTH-PHOENIX-Weather requires manual download from "
-            "https://www-i6.informatik.rwth-aachen.de/~koller/RWTH-PHOENIX/"
+            "Download and unpack the 39 GB phoenix-2014-T.v3.tar.gz release from "
+            "https://www-i6.informatik.rwth-aachen.de/~koller/"
+            "RWTH-PHOENIX-2014-T/. The smaller "
+            "phoenix-2014.v3-nofeatures.tar.gz archive is a different release "
+            "and does not provide the PHOENIX-2014-T annotations and full-frame tree."
         )
 
     log.info("PHOENIX release directory validated: %s", release_dir)

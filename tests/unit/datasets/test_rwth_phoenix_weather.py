@@ -314,8 +314,14 @@ class TestRWTHPhoenixWeatherDownload:
         adapter = RWTHPhoenixWeatherDataset()
         context = PipelineContext(config=cfg, dataset=adapter)
 
-        with pytest.raises(FileNotFoundError, match="PHOENIX release directory"):
+        with pytest.raises(
+            FileNotFoundError, match="PHOENIX release directory"
+        ) as exc_info:
             adapter.download(cfg, context)
+
+        message = str(exc_info.value)
+        assert "phoenix-2014-T.v3.tar.gz" in message
+        assert "phoenix-2014.v3-nofeatures.tar.gz" in message
 
     def test_materialize_mode_calls_materialise(self, tmp_path, monkeypatch):
         release_dir = _make_phoenix_release(tmp_path, splits=("train",), rows_per_split=1)
