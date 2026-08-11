@@ -175,6 +175,48 @@ class TestOpenASLBuildManifest:
         assert context.stats["dataset.manifest"]["videos"] == 2
         assert context.stats["dataset.manifest"]["segments"] == 3
 
+    def test_exact_duplicate_samples_are_dropped(self, tmp_path, caplog):
+        tsv_path = tmp_path / "openasl.tsv"
+        self._write_tsv(tsv_path, [
+            ["s1", "yt1", 0.0, 1.0, "Text"],
+            ["s1", "yt1", 0.0, 1.0, "Text"],
+            ["s2", "yt1", 1.0, 2.0, "More"],
+        ])
+        manifest_path = tmp_path / "manifest.csv"
+        cfg = Config(
+            dataset={
+                "name": "openasl",
+                "source": {"manifest_tsv": str(tsv_path)},
+            },
+            paths={"manifest": str(manifest_path)},
+        )
+
+        with caplog.at_level("WARNING"):
+            context = OpenASLDataset().build_manifest(
+                cfg, self._make_context(cfg)
+            )
+
+        assert list(context.manifest_df["SAMPLE_ID"]) == ["s1", "s2"]
+        assert "Dropped 1 exact duplicate" in caplog.text
+
+    def test_conflicting_duplicate_sample_id_raises(self, tmp_path):
+        tsv_path = tmp_path / "openasl.tsv"
+        self._write_tsv(tsv_path, [
+            ["s1", "yt1", 0.0, 1.0, "First"],
+            ["s1", "yt1", 0.0, 2.0, "Conflicting"],
+        ])
+        manifest_path = tmp_path / "manifest.csv"
+        cfg = Config(
+            dataset={
+                "name": "openasl",
+                "source": {"manifest_tsv": str(tsv_path)},
+            },
+            paths={"manifest": str(manifest_path)},
+        )
+
+        with pytest.raises(ValueError, match="conflicting rows"):
+            OpenASLDataset().build_manifest(cfg, self._make_context(cfg))
+
     def test_manifest_written_to_disk(self, tmp_path):
         """Manifest file is actually written as TSV."""
         tsv_path = tmp_path / "openasl.tsv"

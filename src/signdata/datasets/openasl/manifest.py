@@ -32,6 +32,33 @@ def _parse_timestamps(series: pd.Series, column: str) -> pd.Series:
     return seconds.astype(float)
 
 
+def _deduplicate_samples(df: pd.DataFrame, log: logging.Logger) -> pd.DataFrame:
+    """Drop exact duplicate rows and reject conflicting SAMPLE_ID reuse."""
+    duplicate_ids = df.loc[
+        df["SAMPLE_ID"].duplicated(keep=False), "SAMPLE_ID"
+    ].unique()
+    if not len(duplicate_ids):
+        return df
+
+    deduplicated = df.drop_duplicates().reset_index(drop=True)
+    conflicts = deduplicated[
+        deduplicated["SAMPLE_ID"].isin(duplicate_ids)
+        & deduplicated["SAMPLE_ID"].duplicated(keep=False)
+    ]
+    if not conflicts.empty:
+        conflicting_ids = (
+            conflicts["SAMPLE_ID"].drop_duplicates().head(5).tolist()
+        )
+        raise ValueError(
+            "OpenASL TSV reuses SAMPLE_ID values for conflicting rows. "
+            f"First 5: {conflicting_ids}"
+        )
+
+    dropped = len(df) - len(deduplicated)
+    log.warning("Dropped %d exact duplicate OpenASL sample row(s).", dropped)
+    return deduplicated
+
+
 def build(config, source: OpenASLSourceConfig, log: logging.Logger) -> pd.DataFrame:
     """Build canonical manifest from OpenASL TSV."""
     tsv = read_manifest_tsv(source)
@@ -73,6 +100,8 @@ def build(config, source: OpenASLSourceConfig, log: logging.Logger) -> pd.DataFr
     for src_col, canon_col in (("split", "SPLIT"), ("signer_id", "SIGNER_ID")):
         if src_col in tsv.columns:
             df[canon_col] = tsv[src_col].astype(str)
+
+    df = _deduplicate_samples(df, log)
 
     if source.bbox_json and Path(source.bbox_json).exists():
         df = _merge_bboxes(df, source.bbox_json)
