@@ -1,0 +1,42 @@
+name: "Video2Compression — non-excluded datasets"
+description: >
+  Compress the locally acquired datasets while explicitly excluding How2Sign
+  and YouTube-ASL. Existing manifests are loaded from the external Dataset
+  drive; no download or manifest rebuild stage is run.
+
+jobs:
+  - config: jobs/lsa64/compression.yaml
+    overrides:
+      paths.root: /media/gorden/1CB0D265B0D24544/Dataset/lsa64
+      paths.videos: /media/gorden/1CB0D265B0D24544/Dataset/lsa64/all
+      paths.manifest: /media/gorden/1CB0D265B0D24544/Dataset/lsa64/manifest.csv
+      dataset.source.release_dir: /media/gorden/1CB0D265B0D24544/Dataset/lsa64/all
+
+  - config: jobs/slovo/compression.yaml
+    overrides:
+      paths.root: /media/gorden/1CB0D265B0D24544/Dataset/slovo
+      paths.videos: /media/gorden/1CB0D265B0D24544/Dataset/slovo
+      paths.manifest: /media/gorden/1CB0D265B0D24544/Dataset/slovo/manifest.csv
+      dataset.source.release_dir: /media/gorden/1CB0D265B0D24544/Dataset/slovo
+
+  - config: jobs/msasl/compression.yaml
+    overrides:
+      paths.root: /media/gorden/1CB0D265B0D24544/Dataset/msasl
+      paths.videos: /media/gorden/1CB0D265B0D24544/Dataset/msasl/videos
+      paths.manifest: /media/gorden/1CB0D265B0D24544/Dataset/msasl/manifest.csv
+      dataset.source.annotations_dir: /media/gorden/1CB0D265B0D24544/Dataset/msasl/annotations
+
+  - config: jobs/wlasl/compression.yaml
+    overrides:
+      paths.root: /media/gorden/1CB0D265B0D24544/Dataset/wlasl
+      paths.videos: /media/gorden/1CB0D265B0D24544/Dataset/wlasl/videos
+      paths.manifest: /media/gorden/1CB0D265B0D24544/Dataset/wlasl/manifest.csv
+      dataset.source.metadata_json: /media/gorden/1CB0D265B0D24544/Dataset/wlasl/WLASL_v0.3.json
+
+  - config: jobs/openasl/compression.yaml
+    overrides:
+      paths.root: /media/gorden/1CB0D265B0D24544/Dataset/openasl
+      paths.videos: /media/gorden/1CB0D265B0D24544/Dataset/openasl/videos
+      paths.manifest: /media/gorden/1CB0D265B0D24544/Dataset/openasl/manifest.csv
+      dataset.source.manifest_tsv: /media/gorden/1CB0D265B0D24544/Dataset/openasl/data/openasl-v1.0.tsv
+      dataset.source.bbox_json: /media/gorden/1CB0D265B0D24544/Dataset/openasl/data/bbox-v1.0.json

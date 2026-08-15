@@ -1,0 +1,12 @@
+base:
+  - ../../base/datasets/msasl.yaml
+  - ../../base/processors/video2compression.yaml
+
+dataset:
+  download: false
+  manifest: false
+
+paths:
+  root: dataset/msasl
+  videos: dataset/msasl/videos
+  manifest: dataset/msasl/manifest.csv

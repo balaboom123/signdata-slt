@@ -1,0 +1,12 @@
+base:
+  - ../../base/datasets/slovo.yaml
+  - ../../base/processors/video2compression.yaml
+
+dataset:
+  download: false
+  manifest: false
+
+paths:
+  root: dataset/slovo
+  videos: dataset/slovo
+  manifest: dataset/slovo/manifest.csv

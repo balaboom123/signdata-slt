@@ -1,0 +1,12 @@
+base:
+  - ../../base/datasets/openasl.yaml
+  - ../../base/processors/video2compression.yaml
+
+dataset:
+  download: false
+  manifest: false
+
+paths:
+  root: dataset/openasl
+  videos: dataset/openasl/videos
+  manifest: dataset/openasl/manifest.csv

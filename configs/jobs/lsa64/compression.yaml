@@ -1,0 +1,16 @@
+base:
+  - ../../base/datasets/lsa64.yaml
+  - ../../base/processors/video2compression.yaml
+
+dataset:
+  download: false
+  manifest: false
+  source:
+    # The external mirror contains the raw variant under this directory.
+    release_dir: dataset/lsa64/all
+    variant: raw
+
+paths:
+  root: dataset/lsa64
+  videos: dataset/lsa64/all
+  manifest: dataset/lsa64/manifest.csv

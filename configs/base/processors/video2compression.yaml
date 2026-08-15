@@ -1,0 +1,26 @@
+processing:
+  enabled: true
+  processor: video2compression
+  detection: "null"
+  pose: null
+  sample_rate: null
+  max_workers: 3
+  video_config:
+    # Evaluated NVENC profile used by the compression benchmark.  Compression
+    # preserves the source geometry and cadence; it only changes the codec.
+    codec: av1_nvenc
+    preset: p7
+    crf: 34
+    aq_strength: 8
+    nvenc_gpu: 0
+    max_bitrate_ratio: 0.52
+    min_video_reduction_ratio: 0.10
+    resize: null
+
+post_processing:
+  enabled: false
+
+output:
+  enabled: false
+
+run_name: video2compression-av1-cq34

@@ -1,0 +1,12 @@
+base:
+  - ../../base/datasets/wlasl.yaml
+  - ../../base/processors/video2compression.yaml
+
+dataset:
+  download: false
+  manifest: false
+
+paths:
+  root: dataset/wlasl
+  videos: dataset/wlasl/videos
+  manifest: dataset/wlasl/manifest.csv
